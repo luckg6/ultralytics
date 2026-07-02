@@ -9,7 +9,8 @@
 #     └── dota8 ← downloads here (1 MB)
 
 # Train/val/test sets as 1) dir: path/to/imgs, 2) file: path/to/imgs.txt, or 3) list: [path/to/imgs1, path/to/imgs2, ..]
-path: dota8 # dataset root dir
+#path: dota8 # dataset root dir
+path: C:/E/download/dota8
 train: images/train # train images (relative to 'path') 4 images
 val: images/val # val images (relative to 'path') 4 images
 
@@ -32,4 +33,4 @@ names:
   14: swimming pool
 
 # Download script/URL (optional)
-download: https://github.com/ultralytics/assets/releases/download/v0.0.0/dota8.zip
+#download: https://github.com/ultralytics/assets/releases/download/v0.0.0/dota8.zip

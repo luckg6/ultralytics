@@ -1,0 +1,12 @@
+path: C:/E/download/DOTAv1_split
+
+train: images/train
+val: images/val
+test: images/test
+nc: 3
+names:
+  0: plane        # 对应原始 0
+  1: small vehicle # 对应原始 10
+  2: helicopter   # 对应原始 11
+
+#filter_classes: [0, 10, 11]  # 顺序与 names 一致
