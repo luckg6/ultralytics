@@ -18,7 +18,7 @@ if __name__ == '__main__':
     pretrained='yolo11n-obb.pt',
     epochs=100,
     batch=16,
-    imgsz=640,         # 保持1024匹配切片
+    imgsz=640,         # 保持640匹配切片
     seed=42,
     device=0,
     amp=True,           # 必须开！
