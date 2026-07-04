@@ -12,7 +12,7 @@ if torch.cuda.is_available():
     print("当前GPU索引:", torch.cuda.current_device())
     # 4. 查看GPU名称
     print("GPU名称:", torch.cuda.get_device_name(0))
-    
+
     # 5. 简单的张量运算验证（将张量放到GPU上计算）
     # 创建一个张量并移到GPU
     x = torch.tensor([1.0, 2.0, 3.0]).cuda()

@@ -48,11 +48,11 @@ class OBBValidator(DetectionValidator):
         preds = super().postprocess(preds)
         for pred in preds:
             pred["bboxes"] = torch.cat([pred["bboxes"], pred.pop("extra")], dim=-1)  # concatenate angle
-            
+
             # ==========================================================
             # 🚀 动态开关：仅保留模型预测出的小目标 (Area < 1024 平方像素)
             # ==========================================================
-            if os.environ.get('EVAL_SMALL_ONLY') == '1':
+            if os.environ.get("EVAL_SMALL_ONLY") == "1":
                 w = pred["bboxes"][:, 2]
                 h = pred["bboxes"][:, 3]
                 mask = (w * h) < 1024
@@ -60,7 +60,7 @@ class OBBValidator(DetectionValidator):
                 pred["cls"] = pred["cls"][mask]
                 pred["conf"] = pred["conf"][mask]
             # ==========================================================
-            
+
         return preds
 
     def _prepare_batch(self, si: int, batch: dict[str, Any]) -> dict[str, Any]:
@@ -73,11 +73,11 @@ class OBBValidator(DetectionValidator):
         ratio_pad = batch["ratio_pad"][si]
         if cls.shape[0]:
             bbox[..., :4].mul_(torch.tensor(imgsz, device=self.device)[[1, 0, 1, 0]])  # target boxes
-            
+
             # ==========================================================
             # 🚀 动态开关：仅保留真实标签 (Ground Truth) 中的小目标
             # ==========================================================
-            if os.environ.get('EVAL_SMALL_ONLY') == '1':
+            if os.environ.get("EVAL_SMALL_ONLY") == "1":
                 w = bbox[:, 2]
                 h = bbox[:, 3]
                 mask = (w * h) < 1024
@@ -133,6 +133,7 @@ class OBBValidator(DetectionValidator):
     def save_one_txt(self, predn: dict[str, torch.Tensor], save_conf: bool, shape: tuple[int, int], file: Path) -> None:
         """Save YOLO OBB detections to a text file in normalized coordinates."""
         import numpy as np
+
         from ultralytics.engine.results import Results
 
         Results(
