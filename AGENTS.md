@@ -113,11 +113,29 @@ python scripts/evaluate_obb.py --model path/to/best.pt --data DIOR.yaml --mode s
 
 ## 创新点方向候选
 
-优先选择小而清楚、容易写论文动机、容易单独消融的改动：
+优先选择小而清楚、容易写论文动机、容易单独消融的改动。总体路线是：从 CVPR/ICCV/ECCV 等顶会论文中吸收成熟模块思想，参考其官方开源代码，但实际实现要轻量适配 YOLO11n-OBB，避免直接搬入大型 backbone 或复杂依赖。
 
-- 小目标特征增强：增加 P2/4 检测层，或加强浅层特征融合。
-- 轻量注意力或上下文模块：放在 neck 或 backbone 中，增强复杂遥感背景下的目标特征。
-- OBB 定位相关改动：例如旋转框定位损失、角度分支、样本分配策略等。
+- 创新点 A：小目标特征增强。参考 EfficientDet/BiFPN 的加权多尺度特征融合思想，或增加 P2/4 小目标检测层。优先落地为 P2 head 或轻量 Weighted Feature Fusion。
+- 创新点 B：遥感上下文注意力。参考 LSKNet 的大选择核思想，放在 backbone 后段、SPPF 附近或 neck 融合后，增强复杂遥感背景下的目标特征。
+- 创新点 C：旋转目标几何适应。参考 InternImage/DCNv3 或 Dynamic Head，优先做轻量局部替换，不要大范围替换整个 backbone。
+
+建议实现顺序：
+
+1. 先做 A，因为它最贴合小目标主题，代码风险最低。
+2. 再做 B，因为遥感论文动机最自然，适合和 A 融合。
+3. 最后做 C，如果 DCN/DCNv3 依赖过重，可以换成更轻的动态检测头或 head attention。
+
+建议融合顺序：
+
+```text
+A
+B
+C
+A + B
+A + B + C
+```
+
+顶会论文与官方代码入口整理在 `research/top_conference/`。不要把大型第三方仓库直接复制进本仓库；真正实现时，只抽取必要模块并检查许可证、依赖和训练成本。
 
 做消融时，除非某个实验明确研究训练策略，否则要固定训练设置。不要随意改变 `imgsz`、epochs、优化器、数据增强、数据 split，否则很难说明提升来自模型结构本身。
 
