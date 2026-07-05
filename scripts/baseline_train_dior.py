@@ -11,11 +11,11 @@ if __name__ == '__main__':
     freeze_support()  # 解决多进程报错
     
     # 基线模型：原始head.py
-    model = YOLO('yolo11n-obb.yaml')
+    model = YOLO('ultralytics/cfg/models/11/remote_obb/yolo11n-obb-baseline.yaml')
 
     model.train(
     data="DIOR.yaml",
-    pretrained='yolo11n-obb.pt',
+    pretrained='weights/pretrained/yolo11n-obb.pt',
     epochs=100,
     batch=16,
     imgsz=640,         # 保持640匹配切片

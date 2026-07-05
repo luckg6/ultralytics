@@ -14,7 +14,7 @@ if __name__ == '__main__':
     model = YOLO('yolo11s-obb.yaml')
     model.train(
         data='dota8.yaml',
-        pretrained='yolo11s.pt',
+        pretrained='weights/pretrained/yolo11s.pt',
         epochs=100,
         batch=16,
         imgsz=1024,

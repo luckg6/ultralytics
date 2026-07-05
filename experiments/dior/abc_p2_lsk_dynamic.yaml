@@ -1,0 +1,8 @@
+status: planned
+variant: ABC
+description: Fusion of A, B, and C after single and AB experiments are validated.
+model: TODO
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: DIOR.yaml
+name: dior_ABC_p2_lsk_dynamic
+

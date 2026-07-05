@@ -1,6 +1,6 @@
 # from ultralytics import YOLO
 # # 加载预训练模型
-# model = YOLO('C:\\E\\github\\ultralytics\\modelPt\\yolo11n-obb.pt')
+# model = YOLO('C:\\E\\github\\ultralytics\\weights\\pretrained\\yolo11n-obb.pt')
 # model = model.to('cuda:0')
 # # 查看模型设备（输出cuda:0表示使用GPU）
 # print("模型运行设备:", model.device)

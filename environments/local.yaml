@@ -1,0 +1,6 @@
+# Local Windows runtime profile.
+
+data: DIOR.yaml
+device: 0
+cache: disk
+workers: 4

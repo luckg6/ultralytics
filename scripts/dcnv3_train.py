@@ -9,7 +9,7 @@ torch.manual_seed(42)
 model = YOLO('yolo11s-obb.yaml')
 model.train(
     data='DOTAv1.yaml',
-    pretrained='yolo11s.pt',
+    pretrained='weights/pretrained/yolo11s.pt',
     epochs=100,
     batch=16,
     imgsz=1024,

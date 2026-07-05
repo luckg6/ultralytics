@@ -2,7 +2,7 @@
 
 Examples:
     python scripts/evaluate_obb.py
-    python scripts/evaluate_obb.py --model runs/obb/train10/weights/best.pt --data DIOR.yaml
+    python scripts/evaluate_obb.py --model weights/baselines/dior-r/yolo11n-obb-dior-r-best.pt --data DIOR.yaml
     python scripts/evaluate_obb.py --model path/to/best.pt --data DOTAv1.yaml --mode all
 """
 
@@ -20,7 +20,11 @@ if str(ROOT) not in sys.path:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate a YOLO OBB model.")
-    parser.add_argument("--model", default="runs/obb/train10/weights/best.pt", help="Path to model weights.")
+    parser.add_argument(
+        "--model",
+        default="weights/baselines/dior-r/yolo11n-obb-dior-r-best.pt",
+        help="Path to model weights.",
+    )
     parser.add_argument("--data", default="DIOR.yaml", help="Dataset YAML, for example DIOR.yaml or DOTAv1.yaml.")
     parser.add_argument("--split", default="test", help="Dataset split to evaluate: val or test.")
     parser.add_argument("--device", default="0", help="Device passed to Ultralytics, for example 0 or cpu.")

@@ -1,0 +1,8 @@
+status: planned
+variant: AB
+description: Fusion of A and B after both single modules are validated.
+model: TODO
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: DIOR.yaml
+name: dior_AB_p2_lsk
+

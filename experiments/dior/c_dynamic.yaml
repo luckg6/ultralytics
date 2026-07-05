@@ -1,0 +1,8 @@
+status: planned
+variant: C
+description: Rotated-object geometric adaptation, planned as lightweight dynamic/deformable/head-attention module.
+model: TODO
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: DIOR.yaml
+name: dior_C_dynamic
+

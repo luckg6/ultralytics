@@ -1,0 +1,8 @@
+status: planned
+variant: B
+description: Remote-sensing context attention, planned as lightweight LSK-style block.
+model: TODO
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: DIOR.yaml
+name: dior_B_lsk
+

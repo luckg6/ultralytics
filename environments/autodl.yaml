@@ -1,0 +1,6 @@
+# AutoDL/Linux server runtime profile.
+
+data: ultralytics/cfg/datasets/DIOR-autodl.yaml
+device: 0
+cache: ram
+workers: 8
