@@ -171,6 +171,8 @@ git pull
 python scripts/train_obb.py --config experiments/dior/a_p2.yaml --env autodl --dry-run
 ```
 
+服务器训练完成后，把关键 `best.pt/last.pt` 整理到 `weights/experiments/<dataset>/<variant>/`，可以直接 `git add`、`git commit`、`git push` 回传；本地再 `git pull` 获取权重。
+
 服务器自检脚本：
 
 ```bash

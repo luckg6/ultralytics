@@ -193,7 +193,7 @@ git status
 git pull
 ```
 
-如果服务器工作区只用于训练，原则上不要在服务器上改代码。训练产生的 `runs/`、`.pt`、`results.csv` 等文件已经被忽略，不会影响 `git pull`。
+如果服务器工作区只用于训练，原则上不要在服务器上改代码。训练产生的 `runs/` 已经被忽略，不会影响 `git pull`；需要回传的权重应整理到 `weights/experiments/` 后再提交。
 
 只有新增依赖或包配置变化时，再运行：
 
@@ -203,7 +203,9 @@ pip install -e .
 
 ## 10. 结果回传
 
-训练结束后，从服务器下载这些文件即可：
+训练结束后，建议把关键权重整理进 `weights/` 后提交 Git。当前项目允许 Git 跟踪 `weights/` 下的 `.pt` 文件；根目录临时下载的 `.pt` 仍然忽略。
+
+至少保留这些文件：
 
 ```text
 runs/.../<run_name>/weights/best.pt
@@ -218,6 +220,17 @@ runs/.../<run_name>/results.png
 ```text
 weights/experiments/<dataset>/<variant>/
 experiments/logs/<dataset>/
+```
+
+服务器上也可以直接整理并提交：
+
+```bash
+mkdir -p weights/experiments/dior/a_p2
+cp runs/obb/dior_A_p2/weights/best.pt weights/experiments/dior/a_p2/best.pt
+cp runs/obb/dior_A_p2/weights/last.pt weights/experiments/dior/a_p2/last.pt
+git add weights/experiments/dior/a_p2
+git commit -m "Add DIOR A-P2 weights"
+git push
 ```
 
 写论文表格前记录：

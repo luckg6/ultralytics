@@ -159,6 +159,8 @@ weights/*
 !weights/README.md
 !weights/**/
 *.pt
+!weights/*.pt
+!weights/**/*.pt
 *.weights
 *.ts
 *.pb
