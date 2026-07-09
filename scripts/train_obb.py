@@ -26,6 +26,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pretrained", help="Override pretrained weights path.")
     parser.add_argument("--name", help="Override run name.")
     parser.add_argument("--device", help="Override device, e.g. 0 or cpu.")
+    parser.add_argument("--batch", type=int, help="Override batch size.")
     parser.add_argument("--cache", help="Override cache mode, e.g. ram, disk, False.")
     parser.add_argument("--resume", help="Resume from a last.pt checkpoint.")
     parser.add_argument("--dry-run", action="store_true", help="Validate and print the resolved config without training.")
@@ -124,6 +125,7 @@ def main() -> None:
         resume_path = resolve_existing_path(args.resume, "resume checkpoint")
         data = pick_value(args.data, env_cfg, cfg, "data")
         device = pick_value(args.device, env_cfg, cfg, "device", 0)
+        batch = pick_value(args.batch, env_cfg, cfg, "batch", 4)
         cache = normalize_cache(pick_value(args.cache, env_cfg, cfg, "cache", "disk"))
         workers = int(pick_value(None, env_cfg, cfg, "workers", 4))
 
@@ -135,6 +137,7 @@ def main() -> None:
             print(f"resume: {resume_path}")
             print(f"data:   {data}")
             print(f"device: {device}")
+            print(f"batch:  {batch}")
             print(f"cache:  {cache}")
             print(f"workers:{workers}")
             return
@@ -148,6 +151,7 @@ def main() -> None:
             resume=resume_path,
             data=data,
             device=device,
+            batch=int(batch),
             workers=workers,
             cache=cache,
         )
@@ -162,6 +166,7 @@ def main() -> None:
     pretrained = args.pretrained or cfg.get("pretrained")
     name = args.name or cfg.get("name")
     device = pick_value(args.device, env_cfg, cfg, "device", 0)
+    batch = pick_value(args.batch, env_cfg, cfg, "batch", 4)
     cache = normalize_cache(pick_value(args.cache, env_cfg, cfg, "cache", "disk"))
     workers = int(pick_value(None, env_cfg, cfg, "workers", 4))
 
@@ -179,7 +184,7 @@ def main() -> None:
         print(f"data:       {data}")
         print(f"name:       {name}")
         print(f"epochs:     {cfg.get('epochs', 100)}")
-        print(f"batch:      {cfg.get('batch', 16)}")
+        print(f"batch:      {batch}")
         print(f"imgsz:      {cfg.get('imgsz', 640)}")
         print(f"device:     {device}")
         print(f"cache:      {cache}")
@@ -199,7 +204,7 @@ def main() -> None:
         data=data,
         pretrained=pretrained,
         epochs=int(cfg.get("epochs", 100)),
-        batch=int(cfg.get("batch", 16)),
+        batch=int(batch),
         imgsz=int(cfg.get("imgsz", 640)),
         seed=int(cfg.get("seed", 42)),
         device=device,

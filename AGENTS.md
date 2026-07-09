@@ -7,7 +7,7 @@
 ## 基线设定
 
 - 任务：遥感图像旋转框检测，`task=obb`。
-- 当前 DIOR-R 基线脚本：`scripts/baseline_train_dior.py`。
+- 当前统一训练入口：`scripts/train_obb.py`。
 - DIOR-R 基线初始化方式：
   - 模型结构：`ultralytics/cfg/models/11/remote_obb/yolo11n-obb-baseline.yaml`
   - 预训练权重：`weights/pretrained/yolo11n-obb.pt`
@@ -16,18 +16,86 @@
 - DIOR-R 本地路径：`C:/E/datasets/YOLODIOR-R/`。
 - 当前 DIOR-R 基线训练参数：
   - `epochs=100`
-  - `batch=16`
+  - `batch=4`
   - `imgsz=640`
   - `seed=42`
   - `deterministic=True`
   - `amp=True`
   - `cache='disk'`
   - `cos_lr=True`
+- 说明：早期 baseline 和 A-P2 尝试过更大的 batch，但 A-P2 在本机 RTX 4060 Laptop 8GB 上频繁 OOM 并触发 CPU fallback；显存占用仍偏高。后续正式主实验统一使用 `batch=4`，保证 baseline/A/B/C/AB/ABC 公平比较。
 - 当前 DIOR-R 基线结果：`weights/baselines/dior-r/yolo11n-obb-dior-r-best.pt`。
 - 当前 DIOR-R baseline 原始训练日志：`runs/obb/train10/results.csv`。
 - 当前 DIOR-R 基线在 `runs/obb/train10/results.csv` 中的验证指标：
   - mAP50 约为 0.849
   - mAP50-95 约为 0.670
+- 当前 DIOR-R baseline 在 `test` split 上用 `scripts/evaluate_obb.py --mode both` 重评后的结果：
+  - 全尺度 mAP50：0.8588
+  - 全尺度 mAP50-95：0.6874
+  - 小目标 mAP50：0.5146
+  - 小目标 mAP50-95：0.3470
+
+## 当前 A-P2 实验结果
+
+- 创新点 A 已完成第一版实验，结构为 P2/4 OBB 检测分支。
+- 模型结构：`ultralytics/cfg/models/11/remote_obb/yolo11n-obb-a-p2.yaml`。
+- 实验配置：`experiments/dior/a_p2.yaml`。
+- 训练后权重：`weights/experiments/dior/a_p2/best.pt`。
+- 训练日志整理目录：`experiments/logs/dior/a_p2/`。
+- 评估记录：
+  - `weights/experiments/dior/a_p2/eval_dior_test_2026-07-06.md`
+  - `weights/experiments/dior/a_p2/compare_with_baseline_dior_test_2026-07-06.md`
+- 在 DIOR-R `test` split 上的评估结果：
+  - 全尺度 mAP50：0.8779
+  - 全尺度 mAP50-95：0.6990
+  - 小目标 mAP50：0.5830
+  - 小目标 mAP50-95：0.4215
+- 相对 baseline 的提升：
+  - 全尺度 mAP50：+0.0191
+  - 全尺度 mAP50-95：+0.0116
+  - 小目标 mAP50：+0.0684
+  - 小目标 mAP50-95：+0.0745
+- 结论：A-P2 对小目标提升明显，是有效创新点，后续 B、C 和融合实验可以继续以 A 为优先融合对象。
+
+## 当前 B-LSK 实验结果
+
+- 创新点 B 已完成第一版实验，结构为轻量 `SPPFLSK` 遥感上下文注意力。
+- 模型结构：`ultralytics/cfg/models/11/remote_obb/yolo11n-obb-b-lsk.yaml`。
+- 实验配置：`experiments/dior/b_lsk.yaml`。
+- 训练后权重：`weights/experiments/dior/b_lsk/best.pt`。
+- 训练日志整理目录：`experiments/logs/dior/b_lsk/`。
+- 评估记录：
+  - `weights/experiments/dior/b_lsk/eval_dior_test_2026-07-09.md`
+  - `weights/experiments/dior/b_lsk/compare_with_baseline_a_p2_dior_test_2026-07-09.md`
+- 在 DIOR-R `test` split 上的评估结果：
+  - 全尺度 mAP50：0.8580
+  - 全尺度 mAP50-95：0.6809
+  - 小目标 mAP50：0.5070
+  - 小目标 mAP50-95：0.3438
+- 相对 baseline 的变化：
+  - 全尺度 mAP50：-0.0008
+  - 全尺度 mAP50-95：-0.0065
+  - 小目标 mAP50：-0.0076
+  - 小目标 mAP50-95：-0.0032
+- 结论：当前 B-LSK 单独实验未提升，属于负向或无效消融；暂不建议直接做 A+B 融合，优先尝试 C，或重新设计 B 的插入位置/模块强度后再复验。
+
+## 当前 C-Dynamic 实验状态
+
+- 创新点 C 已完成轻量版代码实现，当前待训练和评估。
+- 模块：`C3k2Geo`，在原 `C3k2` 输出端追加轻量方向几何感知注意力。
+- 模块文件：`ultralytics/nn/modules/remote_obb_blocks.py`。
+- 模型结构：`ultralytics/cfg/models/11/remote_obb/yolo11n-obb-c-dynamic.yaml`。
+- 实验配置：`experiments/dior/c_dynamic.yaml`。
+- 设计位置：只替换 OBB head 的 P3/P4/P5 三个输出融合层，保持 OBB(P3, P4, P5) 检测头和层号不变。
+- 依赖：不需要下载 DCNv3/InternImage/Dynamic Head 官方代码，不需要自定义 CUDA/C++ op。
+- 已通过检查：
+  - `python scripts/train_obb.py --config experiments/dior/c_dynamic.yaml --env local --dry-run`
+  - 模型构建成功。
+  - 参数量约 2,715,064。
+  - 从 `weights/pretrained/yolo11n-obb.pt` 可迁移 490/580 项权重。
+  - dummy forward 正常。
+- 训练命令：
+  - `python scripts/train_obb.py --config experiments/dior/c_dynamic.yaml --env local`
 
 ## 跨数据集基线原则
 
@@ -88,7 +156,8 @@ baseline/A/B/C/AB/ABC 也都从 weights/pretrained/yolo11n-obb.pt 起训
 
 ```bash
 python scripts/evaluate_obb.py
-python scripts/evaluate_obb.py --model weights/baselines/dior-r/yolo11n-obb-dior-r-best.pt --data DIOR.yaml --mode both
+python scripts/evaluate_obb.py --model weights/baselines/dior-r/yolo11n-obb-dior-r-best.pt --data DIOR.yaml --split test --mode both
+python scripts/evaluate_obb.py --model weights/experiments/dior/a_p2/best.pt --data DIOR.yaml --split test --mode both
 python scripts/evaluate_obb.py --model path/to/best.pt --data DOTAv1.yaml --split test --mode all
 python scripts/evaluate_obb.py --model path/to/best.pt --data DIOR.yaml --mode small
 ```
@@ -98,8 +167,8 @@ python scripts/evaluate_obb.py --model path/to/best.pt --data DIOR.yaml --mode s
 每个数据集上建议做 1 个 baseline 加 5 个改进实验：
 
 1. Baseline：YOLO11n-OBB。
-2. 创新点 A。
-3. 创新点 B。
+2. 创新点 A：P2/4 小目标检测分支，当前 DIOR-R test 已验证有效。
+3. 创新点 B：轻量 `SPPFLSK` 遥感上下文注意力，当前已评估但未提升。
 4. 创新点 C。
 5. 双创新点融合：等 A/B/C 单独结果出来后，选择最强且兼容的一组融合。
 6. 三创新点融合：A + B + C。
@@ -166,21 +235,21 @@ experiments/
 python scripts/train_obb.py --config experiments/dior/baseline.yaml
 ```
 
-`experiments/dior/baseline.yaml` 和 `experiments/dior/a_p2.yaml` 当前为 `status: ready`，B/C/AB/ABC 仍是 `status: planned`。新增实验不要再复制出一堆只改一两行的训练脚本，应优先新增或更新 `experiments/<dataset>/<variant>.yaml`。
+`experiments/dior/baseline.yaml`、`experiments/dior/a_p2.yaml`、`experiments/dior/b_lsk.yaml` 和 `experiments/dior/c_dynamic.yaml` 当前为 `status: ready`，其中 A-P2 和 B-LSK 均已完成训练和评估，C-Dynamic 已完成代码实现并通过基础检查；AB/ABC 仍是 `status: planned`。新增实验不要再复制出一堆只改一两行的训练脚本，应优先新增或更新 `experiments/<dataset>/<variant>.yaml`。
 
 ## 创新点方向候选
 
 优先选择小而清楚、容易写论文动机、容易单独消融的改动。总体路线是：从 CVPR/ICCV/ECCV 等顶会论文中吸收成熟模块思想，参考其官方开源代码，但实际实现要轻量适配 YOLO11n-OBB，避免直接搬入大型 backbone 或复杂依赖。
 
-- 创新点 A：小目标特征增强。当前第一版已落地为 P2/4 OBB 检测分支，配置文件为 `ultralytics/cfg/models/11/remote_obb/yolo11n-obb-a-p2.yaml`，实验配置为 `experiments/dior/a_p2.yaml`。
-- 创新点 B：遥感上下文注意力。参考 LSKNet 的大选择核思想，放在 backbone 后段、SPPF 附近或 neck 融合后，增强复杂遥感背景下的目标特征。
-- 创新点 C：旋转目标几何适应。参考 InternImage/DCNv3 或 Dynamic Head，优先做轻量局部替换，不要大范围替换整个 backbone。
+- 创新点 A：小目标特征增强。当前第一版已落地为 P2/4 OBB 检测分支，配置文件为 `ultralytics/cfg/models/11/remote_obb/yolo11n-obb-a-p2.yaml`，实验配置为 `experiments/dior/a_p2.yaml`。DIOR-R test 结果显示 A-P2 相比 baseline 全尺度 mAP50-95 提升 +0.0116，小目标 mAP50-95 提升 +0.0745，实验有效。
+- 创新点 B：遥感上下文注意力。当前已实现为轻量 `SPPFLSK` 模块，文件为 `ultralytics/nn/modules/remote_obb_blocks.py`，结构配置为 `ultralytics/cfg/models/11/remote_obb/yolo11n-obb-b-lsk.yaml`，实验配置为 `experiments/dior/b_lsk.yaml`。该模块在原 SPPF 位置追加 LSK 风格的大核选择上下文注意力。DIOR-R test 结果显示 B-LSK 相比 baseline 全尺度 mAP50-95 下降 -0.0065，小目标 mAP50-95 下降 -0.0032，当前版本无效；无需下载外部论文代码或第三方依赖。
+- 创新点 C：旋转目标几何适应。当前已实现为轻量 `C3k2Geo` head 模块，文件为 `ultralytics/nn/modules/remote_obb_blocks.py`，结构配置为 `ultralytics/cfg/models/11/remote_obb/yolo11n-obb-c-dynamic.yaml`，实验配置为 `experiments/dior/c_dynamic.yaml`。该模块用水平、垂直和空洞方向分支做动态几何调制，不依赖 DCNv3/InternImage 的自定义算子。
 
 建议实现顺序：
 
-1. 先做 A，因为它最贴合小目标主题，代码风险最低。A 当前可用 `python scripts/train_obb.py --config experiments/dior/a_p2.yaml --dry-run` 检查配置。
-2. 再做 B，因为遥感论文动机最自然，适合和 A 融合。
-3. 最后做 C，如果 DCN/DCNv3 依赖过重，可以换成更轻的动态检测头或 head attention。
+1. A 已完成第一版训练和评估，结果有效；如需复跑可用 `python scripts/train_obb.py --config experiments/dior/a_p2.yaml --dry-run` 检查配置。
+2. B-LSK 已完成第一版训练和评估，但当前无提升；不要直接进入 A+B 融合，除非先重新设计 B。
+3. 下一步直接训练 C-Dynamic。如果 C 有效，再考虑 A+C；如果 C 无效，再重新设计 B 或 C。
 
 建议融合顺序：
 
@@ -201,16 +270,18 @@ A + B + C
 服务器不需要 Codex 桌面版，也不需要登录 Codex。服务器只负责运行训练命令；本地 Codex 负责维护代码、配置和文档。
 
 - 通用工作流说明：`SERVER_TRAINING.md`，覆盖 Git 首次部署、服务器训练、后续 `git pull` 更新代码、结果回传。
-- 本地和服务器的机器差异放在 `environments/`，当前有 `local.yaml` 和 `autodl.yaml`。
-- Linux/AutoDL 数据集配置模板：`ultralytics/cfg/datasets/DIOR-autodl.yaml`。
-- 服务器自检脚本：`scripts/check_server_env.py --env autodl --require-cuda`。
-- 统一训练入口：`scripts/train_obb.py --config experiments/dior/a_p2.yaml --env autodl`。
+- 无 conda 的 Linux 服务器 venv 部署说明：`SERVER_VENV_SETUP.md`，首次部署需要 `pip install -e .`，后续普通 `git pull` 不需要重复安装。
+- 本地和服务器的机器差异放在 `environments/`，当前有 `local.yaml`、`homews.yaml`、`autodl.yaml`、`company5090.yaml`。
+- 公司 5090 数据集模板：`ultralytics/cfg/datasets/DIOR-company.yaml`。
+- `/home/ws` Linux 数据集配置模板：`ultralytics/cfg/datasets/DIOR-homews.yaml`；AutoDL 模板仍保留为 `ultralytics/cfg/datasets/DIOR-autodl.yaml`。
+- 服务器自检脚本：`scripts/check_server_env.py --env homews --require-cuda`。
+- 统一训练入口：`scripts/train_obb.py --config experiments/dior/c_dynamic.yaml --env homews`。
 - 续训入口：`scripts/train_obb.py --resume path/to/last.pt`。
 - 服务器 90GB 内存时，DIOR-R 训练优先用 `--cache ram`；如果 RAM 不够或换成更大的 DOTA，再退回 `--cache disk`。
 - 离线 AMP 检查：`scripts/train_obb.py` 会把 `weights/pretrained/yolo26n.pt` 复制到项目根目录，避免 Ultralytics 在服务器上联网下载。
 - 后续本地改完代码后，默认走 `git commit` / `git push`；服务器只做 `git pull`。`pip install -e .` 首次部署执行一次即可，除非新增依赖或包配置变化。
 - `weights/` 下的 `.pt` 允许 Git 跟踪，便于服务器训练完提交权重、本地直接拉取；根目录临时 `.pt` 仍忽略。
-- `scripts/prepare_server_package.py` 仅作为没有 Git 或网络异常时的兜底工具，不作为常规方案。
+- `scripts/` 只保留 `train_obb.py`、`evaluate_obb.py`、`check_server_env.py` 三个核心入口，不再保留旧的硬编码训练/预测/切分脚本。
 
 ## 命名规范
 

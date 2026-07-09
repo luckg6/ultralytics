@@ -1,0 +1,6 @@
+# Linux server runtime profile for servers rooted at /home/ws.
+
+data: ultralytics/cfg/datasets/DIOR-homews.yaml
+device: 0
+cache: ram
+workers: 8

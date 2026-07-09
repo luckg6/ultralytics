@@ -36,6 +36,7 @@ from ultralytics.nn.modules import (
     C2fPSA,
     C3Ghost,
     C3k2,
+    C3k2Geo,
     C3x,
     CBFuse,
     CBLinear,
@@ -55,6 +56,7 @@ from ultralytics.nn.modules import (
     ImagePoolingAttn,
     Index,
     LRPCHead,
+    LSKBlock,
     Pose,
     Pose26,
     RepC3,
@@ -66,6 +68,7 @@ from ultralytics.nn.modules import (
     SCDown,
     Segment,
     Segment26,
+    SPPFLSK,
     TorchVision,
     WorldDetect,
     YOLOEDetect,
@@ -1582,6 +1585,7 @@ def parse_model(d, ch, verbose=True):
             GhostBottleneck,
             SPP,
             SPPF,
+            SPPFLSK,
             C2fPSA,
             C2PSA,
             DWConv,
@@ -1591,6 +1595,7 @@ def parse_model(d, ch, verbose=True):
             C2,
             C2f,
             C3k2,
+            C3k2Geo,
             RepNCSPELAN4,
             ELAN1,
             ADown,
@@ -1617,6 +1622,7 @@ def parse_model(d, ch, verbose=True):
             C2,
             C2f,
             C3k2,
+            C3k2Geo,
             C2fAttn,
             C3,
             C3TR,
@@ -1654,7 +1660,7 @@ def parse_model(d, ch, verbose=True):
             if m in repeat_modules:
                 args.insert(2, n)  # number of repeats
                 n = 1
-            if m is C3k2:  # for M/L/X sizes
+            if m in {C3k2, C3k2Geo}:  # for M/L/X sizes
                 legacy = False
                 if scale in "mlx":
                     args[3] = True
@@ -1666,6 +1672,9 @@ def parse_model(d, ch, verbose=True):
                 legacy = False
         elif m is AIFI:
             args = [ch[f], *args]
+        elif m is LSKBlock:
+            c2 = ch[f]
+            args = [c2, *args]
         elif m in frozenset({HGStem, HGBlock}):
             c1, cm, c2 = ch[f], args[0], args[1]
             args = [c1, cm, c2, *args[2:]]

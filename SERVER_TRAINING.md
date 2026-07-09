@@ -2,6 +2,18 @@
 
 长期方案不再推荐反复手动打包 zip。推荐方式是：本地 Codex 改代码并提交到 Git，服务器只负责 `git pull` 更新代码和运行训练。`pip install -e .` 只需要首次部署时执行；editable 安装后，后续 `git pull` 的源码改动会直接生效，除非新增了依赖。
 
+如果服务器没有 conda，准备用 Python `venv`，按 `SERVER_VENV_SETUP.md` 操作。该文档包含 venv 创建、PyTorch 安装、本仓库 `pip install -e .`、自检、训练和结果回传流程。
+
+当前你的服务器根目录是 `/home/ws`，因此优先使用：
+
+```bash
+python scripts/check_server_env.py --env homews --require-cuda
+python scripts/train_obb.py --config experiments/dior/c_dynamic.yaml --env homews --dry-run
+python scripts/train_obb.py --config experiments/dior/c_dynamic.yaml --env homews
+```
+
+对应数据集配置是 `ultralytics/cfg/datasets/DIOR-homews.yaml`，数据集应放在 `/home/ws/datasets/YOLODIOR-R/`。
+
 ## 1. 分工
 
 - 本地 Windows：Codex 改代码、改模型 YAML、改实验配置、写文档、提交 Git。
@@ -17,6 +29,7 @@
 experiments/dior/a_p2.yaml       # 实验本身：模型、epoch、batch、imgsz、seed
 environments/local.yaml          # 本地路径和 cache
 environments/autodl.yaml         # 服务器路径和 cache
+environments/company5090.yaml    # 公司 5090 服务器路径和 cache
 ```
 
 训练脚本支持 `--env`：
@@ -24,6 +37,7 @@ environments/autodl.yaml         # 服务器路径和 cache
 ```bash
 python scripts/train_obb.py --config experiments/dior/a_p2.yaml --env local --dry-run
 python scripts/train_obb.py --config experiments/dior/a_p2.yaml --env autodl --dry-run
+python scripts/train_obb.py --config experiments/dior/a_p2.yaml --env company5090 --dry-run
 ```
 
 优先级：
@@ -117,10 +131,10 @@ weights/pretrained/yolo26n.pt
 
 说明：
 
-- `.pt` 权重默认被 `.gitignore` 忽略，不会通过普通 Git 同步。
+- `weights/` 下的 `.pt` 允许 Git 跟踪，可以通过 Git 同步。
 - `yolo11n-obb.pt` 是实验初始化权重。
 - `yolo26n.pt` 用于 Ultralytics AMP 检查，放好后服务器离线也不需要下载。
-- 这一步每台服务器首次做一次即可，后续代码更新不需要重复。
+- 如果公司服务器不能从 Git 拉到权重，再手动放一次即可。
 
 ## 6. 服务器自检
 
@@ -174,6 +188,18 @@ python scripts/train_obb.py \
 
 如果 run 路径不同，按服务器实际路径填写。
 
+本地 8GB 显存如果 batch=16 频繁 OOM，可以在中断后用较小 batch 续训：
+
+```bash
+python scripts/train_obb.py \
+  --config experiments/dior/a_p2.yaml \
+  --env local \
+  --resume runs/obb/runs/obb/dior_A_p2/weights/last.pt \
+  --batch 4
+```
+
+当前项目已经决定后续正式主实验统一使用 `batch=4`。如果当前 A-P2 run 是从较大 batch 中途改成 batch=4 的，它可以作为组会阶段结果；最终论文主表建议 baseline/A/B/C/AB/ABC 都从头按 batch=4 跑。
+
 ## 9. 本地改代码后如何更新服务器
 
 本地：
@@ -201,7 +227,77 @@ git pull
 pip install -e .
 ```
 
-## 10. 结果回传
+## 10. 公司 5090 和本机交替训练
+
+这个方案可行：公司 5090 工作日每天跑 2 小时，结束后提交 `last.pt`；本机晚上或周末拉取 `last.pt` 继续训练。
+
+前提：
+
+- 两边代码处在同一个 Git commit，至少不要在同一个实验中途换未提交的代码。
+- 两边 DIOR-R split、标签和类别顺序完全一致。
+- 两边都使用同一个实验配置，例如 `experiments/dior/a_p2.yaml`。
+- 尽量固定 batch。当前主实验统一为 `batch=4`，公司 5090 和本机接力时也保持一致。
+
+公司 5090 首次准备：
+
+```bash
+cd /data
+git clone https://github.com/luckg6/ultralytics.git
+cd ultralytics
+pip install -e .
+python scripts/check_server_env.py --env company5090 --require-cuda
+```
+
+公司 5090 接力训练：
+
+```bash
+git pull
+python scripts/train_obb.py \
+  --config experiments/dior/a_p2.yaml \
+  --env company5090 \
+  --resume weights/experiments/dior/a_p2/last.pt
+```
+
+如果是第一次在公司 5090 上跑，还没有 `weights/experiments/dior/a_p2/last.pt`，就从头启动：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/a_p2.yaml --env company5090
+```
+
+每次训练结束后，把最新 checkpoint 整理进 Git 跟踪目录：
+
+```bash
+mkdir -p weights/experiments/dior/a_p2
+cp runs/obb/dior_A_p2/weights/best.pt weights/experiments/dior/a_p2/best.pt
+cp runs/obb/dior_A_p2/weights/last.pt weights/experiments/dior/a_p2/last.pt
+git add weights/experiments/dior/a_p2
+git commit -m "Update DIOR A-P2 checkpoint"
+git push
+```
+
+本机接力：
+
+```powershell
+git pull
+python scripts/train_obb.py `
+  --config experiments/dior/a_p2.yaml `
+  --env local `
+  --resume weights/experiments/dior/a_p2/last.pt
+```
+
+如果本机显存吃紧：
+
+```powershell
+python scripts/train_obb.py `
+  --config experiments/dior/a_p2.yaml `
+  --env local `
+  --resume weights/experiments/dior/a_p2/last.pt `
+  --batch 4
+```
+
+注意：频繁交替机器本身没有问题，`last.pt` 包含 optimizer、scaler、epoch 等训练状态。但如果中途频繁改变 batch，严格论文实验要在日志里记录；最终正式结果最好固定同一套训练参数重跑。
+
+## 11. 结果回传
 
 训练结束后，建议把关键权重整理进 `weights/` 后提交 Git。当前项目允许 Git 跟踪 `weights/` 下的 `.pt` 文件；根目录临时下载的 `.pt` 仍然忽略。
 
@@ -246,6 +342,6 @@ git push
 - best.pt 路径。
 - 全尺度 mAP 和小目标 mAP。
 
-## 11. 不再推荐的方案
+## 12. 已废弃的方案
 
-`scripts/prepare_server_package.py` 仍保留为无 Git 或网络异常时的兜底工具，但常规开发不要再优先使用 zip 打包更新代码。
+不再使用 zip 打包更新服务器代码。常规流程固定为本地 `git push`，服务器 `git pull`。

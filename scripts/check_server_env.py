@@ -1,7 +1,7 @@
 """Check whether a Linux GPU server is ready for this OBB training project.
 
 Example:
-    python scripts/check_server_env.py --data ultralytics/cfg/datasets/DIOR-autodl.yaml
+    python scripts/check_server_env.py --env autodl --require-cuda
 """
 
 from __future__ import annotations

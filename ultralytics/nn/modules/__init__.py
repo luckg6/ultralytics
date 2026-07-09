@@ -93,6 +93,7 @@ from .head import (
     YOLOESegment26,
     v10Detect,
 )
+from .remote_obb_blocks import C3k2Geo, DirectionalGeoAttention, LSKBlock, SPPFLSK
 from .transformer import (
     AIFI,
     MLP,
@@ -124,6 +125,7 @@ __all__ = (
     "SPP",
     "SPPELAN",
     "SPPF",
+    "SPPFLSK",
     "A2C2f",
     "AConv",
     "ADown",
@@ -136,6 +138,7 @@ __all__ = (
     "C2fCIB",
     "C2fPSA",
     "C3Ghost",
+    "C3k2Geo",
     "C3k2",
     "C3x",
     "CBFuse",
@@ -152,6 +155,7 @@ __all__ = (
     "DeformableTransformerDecoder",
     "DeformableTransformerDecoderLayer",
     "Detect",
+    "DirectionalGeoAttention",
     "Focus",
     "GhostBottleneck",
     "GhostConv",
@@ -160,6 +164,7 @@ __all__ = (
     "ImagePoolingAttn",
     "Index",
     "LRPCHead",
+    "LSKBlock",
     "LayerNorm2d",
     "LightConv",
     "MLPBlock",

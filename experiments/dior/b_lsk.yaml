@@ -1,8 +1,17 @@
-status: planned
+status: ready
 variant: B
-description: Remote-sensing context attention, planned as lightweight LSK-style block.
-model: TODO
+description: Remote-sensing context attention with a lightweight LSK-style SPPFLSK block.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-b-lsk.yaml
 pretrained: weights/pretrained/yolo11n-obb.pt
 data: DIOR.yaml
 name: dior_B_lsk
-
+epochs: 100
+batch: 4
+imgsz: 640
+seed: 42
+device: 0
+workers: 4
+cache: disk
+cos_lr: true
+amp: true
+deterministic: true

@@ -5,4 +5,13 @@ model: TODO
 pretrained: weights/pretrained/yolo11n-obb.pt
 data: DIOR.yaml
 name: dior_ABC_p2_lsk_dynamic
-
+epochs: 100
+batch: 4
+imgsz: 640
+seed: 42
+device: 0
+workers: 4
+cache: disk
+cos_lr: true
+amp: true
+deterministic: true

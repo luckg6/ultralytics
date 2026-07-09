@@ -10,14 +10,64 @@
 - `status: planned` 表示只登记计划，还没有可运行结构。
 - `status: ready` 表示可以直接用统一训练脚本运行。
 
+## 当前 DIOR-R 统一超参
+
+后续 baseline/A/B/C/AB/ABC 主实验统一使用：
+
+```text
+epochs: 100
+batch: 4
+imgsz: 640
+seed: 42
+amp: true
+deterministic: true
+cos_lr: true
+```
+
+说明：最初 baseline 和 A-P2 使用过更大的 batch，但本机 RTX 4060 Laptop 8GB 在 A-P2 上频繁 OOM，并触发 CPU fallback；显存占用仍偏高。因此后续正式对比实验统一改为 `batch=4`，保证所有结构变体公平比较。
+
+## 当前 DIOR-R 实验进展
+
+Baseline、A-P2 和 B-LSK 已完成 `test` split 评估。A-P2 相对 baseline 在全尺度和小目标指标上均有提升，可以作为后续实验的有效消融基础；B-LSK 当前单独实验未提升，暂不建议直接进入 A+B 融合。C-Dynamic 已完成轻量代码实现，当前待训练评估。
+
+| 实验 | 配置 | 权重 | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 | 状态 |
+|---|---|---|---:|---:|---:|---:|---|
+| Baseline | `experiments/dior/baseline.yaml` | `weights/baselines/dior-r/yolo11n-obb-dior-r-best.pt` | 0.8588 | 0.6874 | 0.5146 | 0.3470 | 已评估 |
+| A-P2 | `experiments/dior/a_p2.yaml` | `weights/experiments/dior/a_p2/best.pt` | 0.8779 | 0.6990 | 0.5830 | 0.4215 | 已评估 |
+| B-LSK | `experiments/dior/b_lsk.yaml` | `weights/experiments/dior/b_lsk/best.pt` | 0.8580 | 0.6809 | 0.5070 | 0.3438 | 未提升 |
+| C-Dynamic | `experiments/dior/c_dynamic.yaml` | 待训练 | - | - | - | - | ready |
+| A-P2 相对 baseline | - | - | +0.0191 | +0.0116 | +0.0684 | +0.0745 | 有效 |
+| B-LSK 相对 baseline | - | - | -0.0008 | -0.0065 | -0.0076 | -0.0032 | 无效 |
+
+A-P2 详细记录见：
+
+- `weights/experiments/dior/a_p2/eval_dior_test_2026-07-06.md`
+- `weights/experiments/dior/a_p2/compare_with_baseline_dior_test_2026-07-06.md`
+- `weights/experiments/dior/b_lsk/eval_dior_test_2026-07-09.md`
+- `weights/experiments/dior/b_lsk/compare_with_baseline_a_p2_dior_test_2026-07-09.md`
+
+## 命令
+
 统一训练脚本：
 
 ```bash
-python scripts/train_obb.py --config experiments/dior/baseline.yaml
+python scripts/train_obb.py --config experiments/dior/baseline.yaml --env local
 ```
 
-正式训练前可先加 `--dry-run` 检查配置和路径：
+正式训练前先 dry-run：
 
 ```bash
-python scripts/train_obb.py --config experiments/dior/a_p2.yaml --dry-run
+python scripts/train_obb.py --config experiments/dior/a_p2.yaml --env local --dry-run
+```
+
+B-LSK 复跑前检查配置：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/b_lsk.yaml --env local --dry-run
+```
+
+C-Dynamic 检查配置：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/c_dynamic.yaml --env local --dry-run
 ```

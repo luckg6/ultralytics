@@ -1,0 +1,7 @@
+# Company RTX 5090 Linux server runtime profile.
+# Update `data` if the company server stores DIOR-R elsewhere.
+
+data: ultralytics/cfg/datasets/DIOR-company.yaml
+device: 0
+cache: ram
+workers: 8

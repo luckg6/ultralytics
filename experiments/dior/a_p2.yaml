@@ -6,7 +6,7 @@ pretrained: weights/pretrained/yolo11n-obb.pt
 data: DIOR.yaml
 name: dior_A_p2
 epochs: 100
-batch: 16
+batch: 4
 imgsz: 640
 seed: 42
 device: 0
