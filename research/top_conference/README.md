@@ -16,10 +16,27 @@
 | `lsknet/` | Large Selective Kernel Network | ICCV 2023 | 遥感上下文注意力 | 高 |
 | `internimage_dcnv3/` | InternImage / DCNv3 | CVPR 2023 | 动态空间采样/几何适应 | 中 |
 | `dynamic_head/` | Dynamic Head | CVPR 2021 | 检测头注意力备选 | 中 |
+| `pkinet_2024/` | PKINet / Poly Kernel Inception | CVPR 2024 | 遥感多尺度大核上下文 | 高 |
+| `gra_2024/` | GRA / Group-wise Rotating and Attention | ECCV 2024 | 旋转目标方向感知卷积 | 高 |
+| `freqfusion_2024/` | FreqFusion | TPAMI 2024 | 频率感知 neck 特征融合 | 高 |
+| `fdconv_2025/` | FDConv | CVPR 2025 | 频域动态卷积 | 中 |
+| `gaucho_2025/` | GauCho | CVPR 2025 | OBB 回归表示/角度边界问题 | 中 |
+| `canconv_2024/` | CANConv | CVPR 2024 | 遥感内容自适应非局部卷积 | 中 |
+| `yolov10_2024/` | YOLOv10 | NeurIPS 2024 | 轻量检测器效率/训练分配参考 | 低 |
 
 ## 建议落地顺序
 
-1. 先实现 P2 head 或轻量加权特征融合，作为创新点 A。
-2. 再实现 LSK 类遥感上下文注意力，作为创新点 B。
-3. 最后评估 DCNv3 或 Dynamic Head 类模块，作为创新点 C 或备选 C。
+1. A-P2 已经验证有效，保留为当前最强单点改进。
+2. B-LSK 当前无效，下一版 B 建议从 PKINet 的多尺度大核上下文、FreqFusion 的频率感知融合、或 CANConv 的遥感非局部自适应中重新选一个轻量改造。
+3. C-Dynamic 当前轻微正向，下一步优先做 A+C；如果还想强化 C，可参考 GRA 的 group-wise rotating 思路或 GauCho 的 OBB 表示方式。
+4. FDConv 和 YOLOv10 更适合作为后续效率/训练策略备选，不建议在当前论文主线里一次性改太多。
 
+## 外部源码放置约定
+
+第三方仓库不直接提交进本仓库。若需要本地查看源码，统一浅克隆到：
+
+```text
+research/external_repos/
+```
+
+该目录默认被 Git 忽略，只保留 `README.md` 和 `.gitignore`。真正实现时，只抽取必要模块到 `ultralytics/nn/modules/remote_obb_blocks.py` 或独立的项目模块文件中，并在对应实验 YAML 中登记结构差异。

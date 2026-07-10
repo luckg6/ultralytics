@@ -77,25 +77,59 @@
   - 全尺度 mAP50-95：-0.0065
   - 小目标 mAP50：-0.0076
   - 小目标 mAP50-95：-0.0032
-- 结论：当前 B-LSK 单独实验未提升，属于负向或无效消融；暂不建议直接做 A+B 融合，优先尝试 C，或重新设计 B 的插入位置/模块强度后再复验。
+- 结论：当前 B-LSK 单独实验未提升，属于负向或无效消融；暂不建议直接做 A+B 融合。C-Dynamic 已完成第一版评估后呈轻微正向，下一步优先做 A+C，B 后续需要重新设计插入位置或模块强度后再复验。
 
-## 当前 C-Dynamic 实验状态
+## 当前 B-PKI-Lite 实验状态
 
-- 创新点 C 已完成轻量版代码实现，当前待训练和评估。
+- 创新点 B 第二版已完成轻量代码实现，当前待训练和评估。
+- 动机：旧 B-LSK 在 SPPF 位置追加上下文注意力后未提升，因此新版 B 改为 neck 特征融合层面的 PKINet 风格多核上下文增强。
+- 参考论文：PKINet / Poly Kernel Inception Network for Remote Sensing Detection，CVPR 2024。
+- 模块：`C3k2PKI`，在 `C3k2` 输出端追加轻量 `PKIContext`，使用 3x3、5x5、7x7 空洞 depthwise 多核分支和 CAA 风格上下文门控。
+- 模块文件：`ultralytics/nn/modules/remote_obb_blocks.py`。
+- 模型结构：`ultralytics/cfg/models/11/remote_obb/yolo11n-obb-b-pki-lite.yaml`。
+- 本地实验配置：`experiments/dior/b_pki_lite.yaml`，`batch=4`。
+- `/home/ws` 服务器实验配置：`experiments/dior/b_pki_lite_homews.yaml`，`batch=-1`，数据集配置为 `ultralytics/cfg/datasets/DIOR-homews.yaml`。
+- 设计位置：只替换 top-down neck 的 P5->P4、P4->P3 两个融合块，保持 OBB(P3, P4, P5) 检测头和层号不变。
+- 与 A/C 的边界：
+  - A 是宏观检测尺度改造，新增 P2/4 小目标检测分支。
+  - B-PKI-Lite 是 neck 特征融合改造，不新增检测尺度。
+  - C 是 OBB head 几何适应改造，不做 neck 多核融合。
+- 已通过检查：
+  - `python scripts/train_obb.py --config experiments/dior/b_pki_lite.yaml --env local --dry-run`
+  - `python scripts/train_obb.py --config experiments/dior/b_pki_lite_homews.yaml --dry-run`
+  - 模型构建成功。
+  - dummy forward 正常。
+  - 参数量约 2,737,797。
+- 本地训练命令：
+  - `python scripts/train_obb.py --config experiments/dior/b_pki_lite.yaml --env local`
+- `/home/ws` 服务器训练命令：
+  - `python scripts/train_obb.py --config experiments/dior/b_pki_lite_homews.yaml`
+
+## 当前 C-Dynamic 实验结果
+
+- 创新点 C 已完成第一版实验，结构为轻量方向几何感知 `C3k2Geo` head 模块。
 - 模块：`C3k2Geo`，在原 `C3k2` 输出端追加轻量方向几何感知注意力。
 - 模块文件：`ultralytics/nn/modules/remote_obb_blocks.py`。
 - 模型结构：`ultralytics/cfg/models/11/remote_obb/yolo11n-obb-c-dynamic.yaml`。
 - 实验配置：`experiments/dior/c_dynamic.yaml`。
+- 训练后权重：`weights/experiments/dior/c_dynamic/best.pt`。
+- 训练日志整理目录：`experiments/logs/dior/c_dynamic/`。
+- 评估记录：
+  - `weights/experiments/dior/c_dynamic/eval_dior_test_2026-07-10.md`
+  - `weights/experiments/dior/c_dynamic/compare_with_baseline_a_p2_b_lsk_dior_test_2026-07-10.md`
 - 设计位置：只替换 OBB head 的 P3/P4/P5 三个输出融合层，保持 OBB(P3, P4, P5) 检测头和层号不变。
 - 依赖：不需要下载 DCNv3/InternImage/Dynamic Head 官方代码，不需要自定义 CUDA/C++ op。
-- 已通过检查：
-  - `python scripts/train_obb.py --config experiments/dior/c_dynamic.yaml --env local --dry-run`
-  - 模型构建成功。
-  - 参数量约 2,715,064。
-  - 从 `weights/pretrained/yolo11n-obb.pt` 可迁移 490/580 项权重。
-  - dummy forward 正常。
-- 训练命令：
-  - `python scripts/train_obb.py --config experiments/dior/c_dynamic.yaml --env local`
+- 在 DIOR-R `test` split 上的评估结果：
+  - 全尺度 mAP50：0.8562
+  - 全尺度 mAP50-95：0.6884
+  - 小目标 mAP50：0.5173
+  - 小目标 mAP50-95：0.3527
+- 相对 baseline 的变化：
+  - 全尺度 mAP50：-0.0026
+  - 全尺度 mAP50-95：+0.0010
+  - 小目标 mAP50：+0.0027
+  - 小目标 mAP50-95：+0.0057
+- 结论：C-Dynamic 相对 baseline 有轻微正向收益，主要体现在 mAP50-95 和小目标指标，但单点效果明显弱于 A-P2；后续融合优先尝试 A+C。
 
 ## 跨数据集基线原则
 
@@ -203,6 +237,7 @@ ultralytics/cfg/models/11/remote_obb/
   yolo11n-obb-baseline.yaml
   yolo11n-obb-a-p2.yaml
   yolo11n-obb-b-lsk.yaml
+  yolo11n-obb-b-pki-lite.yaml
   yolo11n-obb-c-dynamic.yaml
   yolo11n-obb-ab-p2-lsk.yaml
   yolo11n-obb-abc-p2-lsk-dynamic.yaml
@@ -215,6 +250,8 @@ experiments/
     baseline.yaml
     a_p2.yaml
     b_lsk.yaml
+    b_pki_lite.yaml
+    b_pki_lite_homews.yaml
     c_dynamic.yaml
     ab_p2_lsk.yaml
     abc_p2_lsk_dynamic.yaml
@@ -235,7 +272,7 @@ experiments/
 python scripts/train_obb.py --config experiments/dior/baseline.yaml
 ```
 
-`experiments/dior/baseline.yaml`、`experiments/dior/a_p2.yaml`、`experiments/dior/b_lsk.yaml` 和 `experiments/dior/c_dynamic.yaml` 当前为 `status: ready`，其中 A-P2 和 B-LSK 均已完成训练和评估，C-Dynamic 已完成代码实现并通过基础检查；AB/ABC 仍是 `status: planned`。新增实验不要再复制出一堆只改一两行的训练脚本，应优先新增或更新 `experiments/<dataset>/<variant>.yaml`。
+`experiments/dior/baseline.yaml`、`experiments/dior/a_p2.yaml`、`experiments/dior/b_lsk.yaml`、`experiments/dior/b_pki_lite.yaml`、`experiments/dior/b_pki_lite_homews.yaml` 和 `experiments/dior/c_dynamic.yaml` 当前为 `status: ready`，其中 A-P2、B-LSK 和 C-Dynamic 均已完成训练和评估，B-PKI-Lite 已完成代码实现并通过基础检查；AB/ABC 仍是 `status: planned`。新增实验不要再复制出一堆只改一两行的训练脚本，应优先新增或更新 `experiments/<dataset>/<variant>.yaml`。
 
 ## 创新点方向候选
 
@@ -243,13 +280,14 @@ python scripts/train_obb.py --config experiments/dior/baseline.yaml
 
 - 创新点 A：小目标特征增强。当前第一版已落地为 P2/4 OBB 检测分支，配置文件为 `ultralytics/cfg/models/11/remote_obb/yolo11n-obb-a-p2.yaml`，实验配置为 `experiments/dior/a_p2.yaml`。DIOR-R test 结果显示 A-P2 相比 baseline 全尺度 mAP50-95 提升 +0.0116，小目标 mAP50-95 提升 +0.0745，实验有效。
 - 创新点 B：遥感上下文注意力。当前已实现为轻量 `SPPFLSK` 模块，文件为 `ultralytics/nn/modules/remote_obb_blocks.py`，结构配置为 `ultralytics/cfg/models/11/remote_obb/yolo11n-obb-b-lsk.yaml`，实验配置为 `experiments/dior/b_lsk.yaml`。该模块在原 SPPF 位置追加 LSK 风格的大核选择上下文注意力。DIOR-R test 结果显示 B-LSK 相比 baseline 全尺度 mAP50-95 下降 -0.0065，小目标 mAP50-95 下降 -0.0032，当前版本无效；无需下载外部论文代码或第三方依赖。
-- 创新点 C：旋转目标几何适应。当前已实现为轻量 `C3k2Geo` head 模块，文件为 `ultralytics/nn/modules/remote_obb_blocks.py`，结构配置为 `ultralytics/cfg/models/11/remote_obb/yolo11n-obb-c-dynamic.yaml`，实验配置为 `experiments/dior/c_dynamic.yaml`。该模块用水平、垂直和空洞方向分支做动态几何调制，不依赖 DCNv3/InternImage 的自定义算子。
+- 创新点 B 第二版：neck 特征融合增强。当前已实现为轻量 `C3k2PKI` 模块，文件为 `ultralytics/nn/modules/remote_obb_blocks.py`，结构配置为 `ultralytics/cfg/models/11/remote_obb/yolo11n-obb-b-pki-lite.yaml`，本地实验配置为 `experiments/dior/b_pki_lite.yaml`，服务器实验配置为 `experiments/dior/b_pki_lite_homews.yaml`。该模块参考 CVPR 2024 PKINet，只在 top-down neck 的 P5->P4、P4->P3 融合块加入多核上下文，不新增检测尺度，也不改 OBB 几何回归。
+- 创新点 C：旋转目标几何适应。当前已实现为轻量 `C3k2Geo` head 模块，文件为 `ultralytics/nn/modules/remote_obb_blocks.py`，结构配置为 `ultralytics/cfg/models/11/remote_obb/yolo11n-obb-c-dynamic.yaml`，实验配置为 `experiments/dior/c_dynamic.yaml`。该模块用水平、垂直和空洞方向分支做动态几何调制，不依赖 DCNv3/InternImage 的自定义算子。DIOR-R test 结果显示 C-Dynamic 相比 baseline 全尺度 mAP50-95 提升 +0.0010，小目标 mAP50-95 提升 +0.0057，属于轻微正向但不强。
 
 建议实现顺序：
 
 1. A 已完成第一版训练和评估，结果有效；如需复跑可用 `python scripts/train_obb.py --config experiments/dior/a_p2.yaml --dry-run` 检查配置。
-2. B-LSK 已完成第一版训练和评估，但当前无提升；不要直接进入 A+B 融合，除非先重新设计 B。
-3. 下一步直接训练 C-Dynamic。如果 C 有效，再考虑 A+C；如果 C 无效，再重新设计 B 或 C。
+2. B-LSK 已完成第一版训练和评估，但当前无提升；新版 B-PKI-Lite 已完成代码和配置，下一步可以直接训练。
+3. C-Dynamic 已完成第一版训练和评估，轻微正向但不强；如 B-PKI-Lite 或 A+C 有提升，再考虑后续融合。
 
 建议融合顺序：
 
@@ -257,11 +295,13 @@ python scripts/train_obb.py --config experiments/dior/baseline.yaml
 A
 B
 C
-A + B
+A + C
 A + B + C
 ```
 
 顶会论文与官方代码入口整理在 `research/top_conference/`。不要把大型第三方仓库直接复制进本仓库；真正实现时，只抽取必要模块并检查许可证、依赖和训练成本。
+
+2024+ 新候选方向和后续实验计划见 `research/top_conference/2024_plus_experiment_plan.md`。当前优先级建议为：先做 A+C，再用 PKINet 思路重做 B；FreqFusion 和 GRA-Lite 作为第二梯队；GauCho 更适合作为 OBB 回归扩展或后续工作。
 
 做消融时，除非某个实验明确研究训练策略，否则要固定训练设置。不要随意改变 `imgsz`、epochs、优化器、数据增强、数据 split，否则很难说明提升来自模型结构本身。
 
@@ -275,7 +315,7 @@ A + B + C
 - 公司 5090 数据集模板：`ultralytics/cfg/datasets/DIOR-company.yaml`。
 - `/home/ws` Linux 数据集配置模板：`ultralytics/cfg/datasets/DIOR-homews.yaml`；AutoDL 模板仍保留为 `ultralytics/cfg/datasets/DIOR-autodl.yaml`。
 - 服务器自检脚本：`scripts/check_server_env.py --env homews --require-cuda`。
-- 统一训练入口：`scripts/train_obb.py --config experiments/dior/c_dynamic.yaml --env homews`。
+- 统一训练入口：`scripts/train_obb.py --config experiments/dior/b_pki_lite_homews.yaml`。
 - 续训入口：`scripts/train_obb.py --resume path/to/last.pt`。
 - 服务器 90GB 内存时，DIOR-R 训练优先用 `--cache ram`；如果 RAM 不够或换成更大的 DOTA，再退回 `--cache disk`。
 - 离线 AMP 检查：`scripts/train_obb.py` 会把 `weights/pretrained/yolo26n.pt` 复制到项目根目录，避免 Ultralytics 在服务器上联网下载。
