@@ -28,18 +28,21 @@ cos_lr: true
 
 ## 当前 DIOR-R 实验进展
 
-Baseline、A-P2、B-LSK 和 C-Dynamic 已完成 `test` split 评估。A-P2 相对 baseline 在全尺度和小目标指标上均有提升，可以作为后续实验的有效消融基础；B-LSK 当前单独实验未提升，暂不建议直接进入 A+B 融合；C-Dynamic 相对 baseline 的 mAP50-95 和小目标指标略有提升，但单点效果不如 A-P2。新版 B-PKI-Lite 已完成代码和配置，待训练。
+Baseline、A-P2、B-LSK、C-Dynamic 和 B-PKI-Lite 已完成 `test` split 评估。A-P2 相对 baseline 在全尺度和小目标指标上均有提升，可以作为后续实验的有效消融基础；B-LSK 当前单独实验未提升；C-Dynamic 轻微正向；B-PKI-Lite 比旧 B-LSK 明显更好，小目标指标有一定提升，但单点效果仍不如 A-P2。
+A+B-PKI-Lite 已完成代码和配置，当前待训练。
 
 | 实验 | 配置 | 权重 | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 | 状态 |
 |---|---|---|---:|---:|---:|---:|---|
 | Baseline | `experiments/dior/baseline.yaml` | `weights/baselines/dior-r/yolo11n-obb-dior-r-best.pt` | 0.8588 | 0.6874 | 0.5146 | 0.3470 | 已评估 |
 | A-P2 | `experiments/dior/a_p2.yaml` | `weights/experiments/dior/a_p2/best.pt` | 0.8779 | 0.6990 | 0.5830 | 0.4215 | 已评估 |
 | B-LSK | `experiments/dior/b_lsk.yaml` | `weights/experiments/dior/b_lsk/best.pt` | 0.8580 | 0.6809 | 0.5070 | 0.3438 | 未提升 |
-| B-PKI-Lite | `experiments/dior/b_pki_lite.yaml` | 待训练 | - | - | - | - | ready |
+| B-PKI-Lite | `experiments/dior/b_pki_lite_homews.yaml` | `weights/experiments/dior/b_pki_lite/best.pt` | 0.8588 | 0.6885 | 0.5249 | 0.3621 | 小幅提升，已续训到 100，best 优于 last |
 | C-Dynamic | `experiments/dior/c_dynamic.yaml` | `weights/experiments/dior/c_dynamic/best.pt` | 0.8562 | 0.6884 | 0.5173 | 0.3527 | 小幅提升 |
 | A-P2 相对 baseline | - | - | +0.0191 | +0.0116 | +0.0684 | +0.0745 | 有效 |
 | B-LSK 相对 baseline | - | - | -0.0008 | -0.0065 | -0.0076 | -0.0032 | 无效 |
+| B-PKI-Lite 相对 baseline | - | - | +0.0000 | +0.0011 | +0.0103 | +0.0151 | 轻微正向 |
 | C-Dynamic 相对 baseline | - | - | -0.0026 | +0.0010 | +0.0027 | +0.0057 | 轻微正向 |
+| A+B-PKI-Lite | `experiments/dior/ab_p2_pki_lite_homews.yaml` | 待训练 | - | - | - | - | ready |
 
 详细记录见：
 
@@ -49,6 +52,8 @@ Baseline、A-P2、B-LSK 和 C-Dynamic 已完成 `test` split 评估。A-P2 相�
 - `weights/experiments/dior/b_lsk/compare_with_baseline_a_p2_dior_test_2026-07-09.md`
 - `weights/experiments/dior/c_dynamic/eval_dior_test_2026-07-10.md`
 - `weights/experiments/dior/c_dynamic/compare_with_baseline_a_p2_b_lsk_dior_test_2026-07-10.md`
+- `weights/experiments/dior/b_pki_lite/eval_dior_test_2026-07-11.md`
+- `weights/experiments/dior/b_pki_lite/compare_with_baseline_a_b_lsk_c_dior_test_2026-07-11.md`
 
 ## 命令
 
@@ -80,6 +85,18 @@ B-PKI-Lite `/home/ws` 服务器配置检查，服务器 batch 使用 `-1` 自动
 
 ```bash
 python scripts/train_obb.py --config experiments/dior/b_pki_lite_homews.yaml --dry-run
+```
+
+A+B-PKI-Lite 本地训练前检查配置：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/ab_p2_pki_lite.yaml --env local --dry-run
+```
+
+A+B-PKI-Lite `/home/ws` 服务器训练命令，服务器 batch 使用 `-1` 自动 batch：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/ab_p2_pki_lite_homews.yaml
 ```
 
 C-Dynamic 检查配置：

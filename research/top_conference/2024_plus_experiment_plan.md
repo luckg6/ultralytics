@@ -5,8 +5,18 @@
 - A-P2 是最强单点改进，小目标 mAP50-95 提升明显。
 - B-LSK 当前为负向消融，需要换思路。
 - C-Dynamic 轻微正向，但单点说服力不足，适合与 A 融合或升级成更强方向感知模块。
+- B-PKI-Lite 已完成第一版评估，比旧 B-LSK 明显更好，小目标 mAP50-95 相对 baseline 提升 +0.0151；已续训到 100 epoch，但 last100 低于 best。
 
-## 优先级 1：A+C 融合
+## 优先级 1：A+B-PKI-Lite 融合
+
+- 实验名：`dior_AB_p2_pki_lite`
+- 配置：`experiments/dior/ab_p2_pki_lite.yaml`
+- 服务器配置：`experiments/dior/ab_p2_pki_lite_homews.yaml`，使用 `/home/ws` 数据路径和 `batch=-1`
+- 模型：`ultralytics/cfg/models/11/remote_obb/yolo11n-obb-ab-p2-pki-lite.yaml`
+- 动机：A-P2 提供高分辨率小目标检测分支，B-PKI-Lite 提供 neck 多核上下文融合，两者改动位置清楚分离，适合作为第一组融合实验。
+- 当前状态：代码和配置已完成，本地/服务器 dry-run、模型构建、预训练迁移和 dummy forward 均已通过。
+
+## 优先级 2：A+C 融合
 
 - 实验名建议：`dior_AC_p2_dynamic`
 - 配置建议：`experiments/dior/ac_p2_dynamic.yaml`
@@ -14,7 +24,7 @@
 - 动机：A-P2 提供高分辨率小目标检测分支，C-Dynamic 提供轻量方向几何调制，两者可能互补。
 - 风险：A-P2 已经增加 GFLOPs，融合 C 后要继续保持 `batch=4`。
 
-## 优先级 2：重新设计 B，首选 PKINet 轻量版
+## 已完成：重新设计 B，首选 PKINet 轻量版
 
 - 实验名建议：`dior_B_pki_lite`
 - 配置建议：`experiments/dior/b_pki_lite.yaml`
@@ -25,6 +35,7 @@
 - 动机：PKINet 是 CVPR 2024 遥感检测工作，直接针对遥感图像尺度变化和上下文多样性，比旧 B-LSK 更贴近本课题。
 - 第一版落点：只替换 top-down neck 的 P5->P4、P4->P3 融合块，不加 P2 分支，不改 OBB 几何回归。
 - 风险：不要整体搬 PKINet backbone；多大核分支必须用 depthwise 控制计算量。
+- 当前状态：已完成第一版训练和 test 评估，并已续训到 100 epoch。`last_epoch100.pt` 低于 `best.pt`，最终对比建议使用 `best.pt`。
 
 ## 优先级 3：FreqFusion 轻量 neck 融合
 
@@ -66,7 +77,7 @@
 ## 当前建议路线
 
 ```text
-短期：A+C -> B-PKI-Lite -> A+B-PKI-Lite
+短期：A+B-PKI-Lite -> A+C 或 A+B+C
 备选：B-FreqFuse -> C-GRA-Lite
 论文扩展：GauCho-style Gaussian auxiliary loss
 ```

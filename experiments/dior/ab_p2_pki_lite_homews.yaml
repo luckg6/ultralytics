@@ -1,0 +1,17 @@
+status: ready
+variant: AB
+description: Server profile for A-P2 plus B-PKI-Lite on /home/ws with auto batch sizing.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-ab-p2-pki-lite.yaml
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: ultralytics/cfg/datasets/DIOR-homews.yaml
+name: dior_AB_p2_pki_lite
+epochs: 100
+batch: -1
+imgsz: 640
+seed: 42
+device: 0
+workers: 8
+cache: ram
+cos_lr: true
+amp: true
+deterministic: true

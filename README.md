@@ -49,17 +49,18 @@ python scripts/train_obb.py --config experiments/dior/baseline.yaml
 
 ## 当前 DIOR-R 阶段结果
 
-A-P2、B-LSK 和 C-Dynamic 已完成训练和 `test` split 评估。A-P2 相对 baseline 有稳定提升，尤其是小目标指标提升明显；B-LSK 当前单独实验未带来提升，暂不建议直接用于 A+B 融合；C-Dynamic 对 mAP50-95 和小目标指标有轻微提升，但单点效果不如 A-P2。新版 B-PKI-Lite 已完成代码和训练配置，待训练。
+A-P2、B-LSK、C-Dynamic 和 B-PKI-Lite 已完成 `test` split 评估。A-P2 相对 baseline 有稳定提升，尤其是小目标指标提升明显；B-LSK 当前单独实验未带来提升；C-Dynamic 轻微正向；新版 B-PKI-Lite 比旧 B-LSK 明显更好，小目标指标有一定提升，但单点效果仍不如 A-P2。
 
 | 模型 | 权重路径 | Params | GFLOPs | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
 |---|---|---:|---:|---:|---:|---:|---:|
 | Baseline | `weights/baselines/dior-r/yolo11n-obb-dior-r-best.pt` | 2,657,623 | 6.6 | 0.8588 | 0.6874 | 0.5146 | 0.3470 |
 | A-P2 | `weights/experiments/dior/a_p2/best.pt` | 2,698,340 | 10.5 | 0.8779 | 0.6990 | 0.5830 | 0.4215 |
 | B-LSK | `weights/experiments/dior/b_lsk/best.pt` | 2,776,094 | 6.7 | 0.8580 | 0.6809 | 0.5070 | 0.3438 |
-| B-PKI-Lite | `weights/experiments/dior/b_pki_lite/best.pt` | 2,737,797 | 待测 | 待训练 | 待训练 | 待训练 | 待训练 |
+| B-PKI-Lite | `weights/experiments/dior/b_pki_lite/best.pt` | 2,699,673 | 6.8 | 0.8588 | 0.6885 | 0.5249 | 0.3621 |
 | C-Dynamic | `weights/experiments/dior/c_dynamic/best.pt` | 2,676,940 | 6.6 | 0.8562 | 0.6884 | 0.5173 | 0.3527 |
 | A-P2 相对 baseline | - | +40,717 | +3.9 | +0.0191 | +0.0116 | +0.0684 | +0.0745 |
 | B-LSK 相对 baseline | - | +118,471 | +0.1 | -0.0008 | -0.0065 | -0.0076 | -0.0032 |
+| B-PKI-Lite 相对 baseline | - | +42,050 | +0.2 | +0.0000 | +0.0011 | +0.0103 | +0.0151 |
 | C-Dynamic 相对 baseline | - | +19,317 | +0.0 | -0.0026 | +0.0010 | +0.0027 | +0.0057 |
 
 对应记录文件：
@@ -71,6 +72,8 @@ A-P2、B-LSK 和 C-Dynamic 已完成训练和 `test` split 评估。A-P2 相对 
 - `weights/experiments/dior/b_lsk/compare_with_baseline_a_p2_dior_test_2026-07-09.md`
 - `weights/experiments/dior/c_dynamic/eval_dior_test_2026-07-10.md`
 - `weights/experiments/dior/c_dynamic/compare_with_baseline_a_p2_b_lsk_dior_test_2026-07-10.md`
+- `weights/experiments/dior/b_pki_lite/eval_dior_test_2026-07-11.md`
+- `weights/experiments/dior/b_pki_lite/compare_with_baseline_a_b_lsk_c_dior_test_2026-07-11.md`
 
 ## 跨数据集 Baseline 原则
 
@@ -94,7 +97,7 @@ weights/pretrained/yolo11n-obb.pt -> 第二数据集 baseline/A/B/C/AB/ABC
 2. 创新点 A：小目标特征增强，当前第一版采用 P2/4 OBB 检测分支。
 3. 创新点 B：遥感上下文注意力，当前实现为轻量 `SPPFLSK` 大选择核上下文模块。
 4. 创新点 C：旋转目标几何适应，例如轻量 DCN/DCNv3 或动态检测头。
-5. 双创新点融合：优先尝试 A + C。
+5. 双创新点融合：优先尝试 A + B-PKI-Lite。
 6. 三创新点融合：A + B + C。
 
 如果按“改进实验”计数，两个数据集是 `5 x 2 = 10` 个实验；如果按论文表格行数计数，两个数据集都包含 baseline，则是 `6 x 2 = 12` 行。
@@ -110,8 +113,9 @@ ultralytics/cfg/models/11/remote_obb/
   yolo11n-obb-baseline.yaml
   yolo11n-obb-a-p2.yaml
   yolo11n-obb-b-lsk.yaml
+  yolo11n-obb-b-pki-lite.yaml
   yolo11n-obb-c-dynamic.yaml
-  yolo11n-obb-ab-p2-lsk.yaml
+  yolo11n-obb-ab-p2-pki-lite.yaml
   yolo11n-obb-abc-p2-lsk-dynamic.yaml
 
 ultralytics/nn/modules/
@@ -134,9 +138,9 @@ python scripts/train_obb.py --config experiments/dior/a_p2.yaml --dry-run
 python scripts/train_obb.py --config experiments/dior/b_lsk.yaml --dry-run
 ```
 
-如需复跑，正式训练时去掉 `--dry-run`。当前 B 是单独创新点实验，不叠加 A-P2；由于结果未提升，暂不建议直接做 A+B 融合，B 后续需要重新设计插入位置或模块强度后再复验。
+如需复跑，正式训练时去掉 `--dry-run`。这里的 B-LSK 是旧版 B 单独创新点实验，不叠加 A-P2；由于结果未提升，暂不建议用 B-LSK 做 A+B 融合。当前 A+B 融合改用新版 B-PKI-Lite。
 
-新版 B-PKI-Lite 已完成代码和配置，参考 CVPR 2024 PKINet，只改 top-down neck 的 P5->P4、P4->P3 融合块，不新增 P2 检测尺度，也不改 OBB 几何回归。本地检查命令：
+新版 B-PKI-Lite 已完成训练和评估，参考 CVPR 2024 PKINet，只改 top-down neck 的 P5->P4、P4->P3 融合块，不新增 P2 检测尺度，也不改 OBB 几何回归。该实验已续训到 100 epoch，但 `last_epoch100.pt` 低于 `best.pt`，最终对比建议使用 `best.pt`。本地复跑前检查命令：
 
 ```bash
 python scripts/train_obb.py --config experiments/dior/b_pki_lite.yaml --env local --dry-run
@@ -148,13 +152,25 @@ python scripts/train_obb.py --config experiments/dior/b_pki_lite.yaml --env loca
 python scripts/train_obb.py --config experiments/dior/b_pki_lite_homews.yaml --dry-run
 ```
 
+A+B-PKI-Lite 融合实验已完成代码和配置。该结构保留 A 的 P2/4 检测分支，同时只在原 top-down neck 的 P5->P4、P4->P3 融合块使用 `C3k2PKI`，不把 PKI 加到新增 P2 分支上。本地检查命令：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/ab_p2_pki_lite.yaml --env local --dry-run
+```
+
+服务器 `/home/ws` 配置使用 `batch=-1` 自动 batch，训练命令：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/ab_p2_pki_lite_homews.yaml
+```
+
 实验 C 已完成训练和评估，采用轻量 `C3k2Geo` 方向几何感知 head 模块，不需要下载 DCNv3/InternImage 等外部代码或编译 CUDA op。当前 test split 结果相对 baseline 的 mAP50-95 和小目标指标略有提升，但不如 A-P2 明显：
 
 ```bash
 python scripts/train_obb.py --config experiments/dior/c_dynamic.yaml --dry-run
 ```
 
-如需复跑，正式训练时去掉 `--dry-run`。C 是单独创新点实验，不叠加 A-P2 或 B-LSK。下一步融合实验建议优先做 A+C。
+如需复跑，正式训练时去掉 `--dry-run`。C 是单独创新点实验，不叠加 A-P2 或 B-PKI-Lite。
 
 ## 验证脚本
 
