@@ -1,0 +1,17 @@
+status: ready
+variant: C
+description: Stronger rotated-object geometric adaptation with C3k2GeoPlus head blocks.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-c-dynamic-plus.yaml
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: DIOR.yaml
+name: dior_C_dynamic_plus
+epochs: 100
+batch: 4
+imgsz: 640
+seed: 42
+device: 0
+workers: 4
+cache: disk
+cos_lr: true
+amp: true
+deterministic: true

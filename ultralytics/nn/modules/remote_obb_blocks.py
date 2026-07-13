@@ -7,7 +7,16 @@ import torch.nn as nn
 
 from .block import C3k2, SPPF
 
-__all__ = ("C3k2Geo", "C3k2PKI", "DirectionalGeoAttention", "LSKBlock", "PKIContext", "SPPFLSK")
+__all__ = (
+    "C3k2Geo",
+    "C3k2GeoPlus",
+    "C3k2PKI",
+    "DirectionalGeoAttention",
+    "DirectionalGeoPlusAttention",
+    "LSKBlock",
+    "PKIContext",
+    "SPPFLSK",
+)
 
 
 class ConvBNAct(nn.Module):
@@ -190,6 +199,55 @@ class DirectionalGeoAttention(nn.Module):
         return x + self.gamma * oriented * gate
 
 
+class DirectionalGeoPlusAttention(nn.Module):
+    """Stronger directional geometry block for C-Dynamic-Plus head features."""
+
+    def __init__(self, c1: int, expansion: float = 0.125, k: int = 7, max_mid: int = 96):
+        """Initialize a moderately heavier orientation-aware modulation block."""
+        super().__init__()
+        c_mid = max(min(int(c1 * expansion), max_mid), 32)
+        c_gate = max(c_mid // 4, 16)
+        pad = k // 2
+        self.reduce = ConvBNAct(c1, c_mid, 1, p=0)
+        self.dw_h = nn.Conv2d(c_mid, c_mid, (1, k), padding=(0, pad), groups=c_mid, bias=False)
+        self.dw_v = nn.Conv2d(c_mid, c_mid, (k, 1), padding=(pad, 0), groups=c_mid, bias=False)
+        self.dw_d = nn.Conv2d(c_mid, c_mid, 3, padding=2, dilation=2, groups=c_mid, bias=False)
+        self.dw_x = nn.Sequential(
+            nn.Conv2d(c_mid, c_mid, (1, k), padding=(0, pad), groups=c_mid, bias=False),
+            nn.Conv2d(c_mid, c_mid, (k, 1), padding=(pad, 0), groups=c_mid, bias=False),
+        )
+        self.branch_bn = nn.BatchNorm2d(c_mid)
+        self.branch_act = nn.SiLU(inplace=True)
+        self.selector = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(c_mid, c_gate, 1, bias=True),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(c_gate, 4, 1, bias=True),
+        )
+        self.channel_gate = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(c_mid, c_gate, 1, bias=True),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(c_gate, c_mid, 1, bias=True),
+            nn.Sigmoid(),
+        )
+        self.spatial_gate = nn.Sequential(nn.Conv2d(2, 1, 7, padding=3, bias=True), nn.Sigmoid())
+        self.restore = ConvBNAct(c_mid, c1, 1, p=0)
+        self.softmax = nn.Softmax(dim=1)
+        self.gamma = nn.Parameter(torch.tensor(0.1))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply orientation-selective spatial and channel modulation."""
+        y = self.reduce(x)
+        branches = torch.stack((self.dw_h(y), self.dw_v(y), self.dw_d(y), self.dw_x(y)), dim=1)
+        weights = self.softmax(self.selector(y)).unsqueeze(2)
+        oriented = (branches * weights).sum(dim=1)
+        oriented = self.branch_act(self.branch_bn(oriented))
+        pooled = torch.cat((torch.mean(oriented, dim=1, keepdim=True), torch.max(oriented, dim=1, keepdim=True)[0]), dim=1)
+        modulated = oriented * self.spatial_gate(pooled) * self.channel_gate(oriented)
+        return x + self.gamma * self.restore(modulated)
+
+
 class C3k2Geo(C3k2):
     """C3k2 with lightweight directional geometry attention for OBB head features."""
 
@@ -210,4 +268,27 @@ class C3k2Geo(C3k2):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply C3k2 followed by directional geometry attention."""
+        return self.geo(super().forward(x))
+
+
+class C3k2GeoPlus(C3k2):
+    """C3k2 with stronger directional geometry attention for C-Dynamic-Plus."""
+
+    def __init__(
+        self,
+        c1: int,
+        c2: int,
+        n: int = 1,
+        c3k: bool = False,
+        e: float = 0.5,
+        attn: bool = False,
+        g: int = 1,
+        shortcut: bool = True,
+    ):
+        """Initialize C3k2 and append the stronger geometry attention block."""
+        super().__init__(c1, c2, n, c3k, e, attn, g, shortcut)
+        self.geo = DirectionalGeoPlusAttention(c2)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply C3k2 followed by C-Dynamic-Plus geometry attention."""
         return self.geo(super().forward(x))

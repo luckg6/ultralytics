@@ -49,7 +49,7 @@ python scripts/train_obb.py --config experiments/dior/baseline.yaml
 
 ## 当前 DIOR-R 阶段结果
 
-A-P2、B-LSK、C-Dynamic 和 B-PKI-Lite 已完成 `test` split 评估。A-P2 相对 baseline 有稳定提升，尤其是小目标指标提升明显；B-LSK 当前单独实验未带来提升；C-Dynamic 轻微正向；新版 B-PKI-Lite 比旧 B-LSK 明显更好，小目标指标有一定提升，但单点效果仍不如 A-P2。
+A-P2、B-LSK、C-Dynamic、B-PKI-Lite 和 A+B-PKI-Lite 已完成 `test` split 评估。A-P2 相对 baseline 有稳定提升，尤其是小目标指标提升明显；B-LSK 当前单独实验未带来提升；C-Dynamic 和新版 B-PKI-Lite 轻微正向；A+B-PKI-Lite 进一步超过 A-P2，是当前 DIOR-R test 上的最佳结果。
 
 | 模型 | 权重路径 | Params | GFLOPs | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
 |---|---|---:|---:|---:|---:|---:|---:|
@@ -58,10 +58,14 @@ A-P2、B-LSK、C-Dynamic 和 B-PKI-Lite 已完成 `test` split 评估。A-P2 相
 | B-LSK | `weights/experiments/dior/b_lsk/best.pt` | 2,776,094 | 6.7 | 0.8580 | 0.6809 | 0.5070 | 0.3438 |
 | B-PKI-Lite | `weights/experiments/dior/b_pki_lite/best.pt` | 2,699,673 | 6.8 | 0.8588 | 0.6885 | 0.5249 | 0.3621 |
 | C-Dynamic | `weights/experiments/dior/c_dynamic/best.pt` | 2,676,940 | 6.6 | 0.8562 | 0.6884 | 0.5173 | 0.3527 |
+| A+B-PKI-Lite | `weights/experiments/dior/ab_p2_pki_lite/best.pt` | 2,740,390 | 10.7 | 0.8859 | 0.7198 | 0.5958 | 0.4288 |
 | A-P2 相对 baseline | - | +40,717 | +3.9 | +0.0191 | +0.0116 | +0.0684 | +0.0745 |
 | B-LSK 相对 baseline | - | +118,471 | +0.1 | -0.0008 | -0.0065 | -0.0076 | -0.0032 |
 | B-PKI-Lite 相对 baseline | - | +42,050 | +0.2 | +0.0000 | +0.0011 | +0.0103 | +0.0151 |
 | C-Dynamic 相对 baseline | - | +19,317 | +0.0 | -0.0026 | +0.0010 | +0.0027 | +0.0057 |
+| A+B-PKI-Lite 相对 baseline | - | +82,767 | +4.1 | +0.0271 | +0.0324 | +0.0812 | +0.0818 |
+
+轻量化对比：A-P2、B-PKI-Lite、C-Dynamic 相对 baseline 的参数增幅分别为 +1.53%、+1.58%、+0.73%；A+B-PKI-Lite 的评估摘要参数量为 2,740,390，相对 baseline 增加 82,767，增幅 +3.11%。
 
 对应记录文件：
 
@@ -74,6 +78,8 @@ A-P2、B-LSK、C-Dynamic 和 B-PKI-Lite 已完成 `test` split 评估。A-P2 相
 - `weights/experiments/dior/c_dynamic/compare_with_baseline_a_p2_b_lsk_dior_test_2026-07-10.md`
 - `weights/experiments/dior/b_pki_lite/eval_dior_test_2026-07-11.md`
 - `weights/experiments/dior/b_pki_lite/compare_with_baseline_a_b_lsk_c_dior_test_2026-07-11.md`
+- `weights/experiments/dior/ab_p2_pki_lite/eval_dior_test_2026-07-13.md`
+- `weights/experiments/dior/ab_p2_pki_lite/compare_with_baseline_a_b_pki_c_dior_test_2026-07-13.md`
 
 ## 跨数据集 Baseline 原则
 
@@ -115,6 +121,7 @@ ultralytics/cfg/models/11/remote_obb/
   yolo11n-obb-b-lsk.yaml
   yolo11n-obb-b-pki-lite.yaml
   yolo11n-obb-c-dynamic.yaml
+  yolo11n-obb-c-dynamic-plus.yaml
   yolo11n-obb-ab-p2-pki-lite.yaml
   yolo11n-obb-abc-p2-lsk-dynamic.yaml
 
@@ -171,6 +178,20 @@ python scripts/train_obb.py --config experiments/dior/c_dynamic.yaml --dry-run
 ```
 
 如需复跑，正式训练时去掉 `--dry-run`。C 是单独创新点实验，不叠加 A-P2 或 B-PKI-Lite。
+
+C-Dynamic-Plus 已完成代码和配置。该版本不覆盖原 C-Dynamic，而是在 OBB head 的 P3/P4/P5 输出融合层使用更强的 `C3k2GeoPlus`，加入通道压缩/还原、四方向分支、空间门控和通道门控，希望让 C 单点有更明显正向收益。本地检查命令：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/c_dynamic_plus.yaml --env local --dry-run
+```
+
+服务器 `/home/ws` 配置使用 `batch=-1` 自动 batch，训练命令：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/c_dynamic_plus_homews.yaml
+```
+
+当前构建检查参数量为 2,734,555，相对 baseline 增加 76,932（+2.90%），比原 C-Dynamic 的 +0.73% 更重，但仍保持在轻量 YOLO11n-OBB 范围内。
 
 ## 验证脚本
 

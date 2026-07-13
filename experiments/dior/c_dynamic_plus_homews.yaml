@@ -1,0 +1,17 @@
+status: ready
+variant: C
+description: Server profile for C-Dynamic-Plus on /home/ws with auto batch sizing.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-c-dynamic-plus.yaml
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: ultralytics/cfg/datasets/DIOR-homews.yaml
+name: dior_C_dynamic_plus
+epochs: 100
+batch: -1
+imgsz: 640
+seed: 42
+device: 0
+workers: 8
+cache: ram
+cos_lr: true
+amp: true
+deterministic: true

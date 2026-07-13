@@ -93,7 +93,16 @@ from .head import (
     YOLOESegment26,
     v10Detect,
 )
-from .remote_obb_blocks import C3k2Geo, C3k2PKI, DirectionalGeoAttention, LSKBlock, PKIContext, SPPFLSK
+from .remote_obb_blocks import (
+    C3k2Geo,
+    C3k2GeoPlus,
+    C3k2PKI,
+    DirectionalGeoAttention,
+    DirectionalGeoPlusAttention,
+    LSKBlock,
+    PKIContext,
+    SPPFLSK,
+)
 from .transformer import (
     AIFI,
     MLP,
@@ -139,6 +148,7 @@ __all__ = (
     "C2fPSA",
     "C3Ghost",
     "C3k2Geo",
+    "C3k2GeoPlus",
     "C3k2PKI",
     "C3k2",
     "C3x",
@@ -157,6 +167,7 @@ __all__ = (
     "DeformableTransformerDecoderLayer",
     "Detect",
     "DirectionalGeoAttention",
+    "DirectionalGeoPlusAttention",
     "Focus",
     "GhostBottleneck",
     "GhostConv",
