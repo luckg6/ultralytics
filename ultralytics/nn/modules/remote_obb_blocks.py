@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from .block import C3k2, SPPF
 
 __all__ = (
     "C3k2Geo",
     "C3k2GeoPlus",
+    "C3k2GRA",
     "C3k2PKI",
     "DirectionalGeoAttention",
     "DirectionalGeoPlusAttention",
+    "GRALiteAttention",
     "LSKBlock",
     "PKIContext",
     "SPPFLSK",
@@ -248,6 +251,93 @@ class DirectionalGeoPlusAttention(nn.Module):
         return x + self.gamma * self.restore(modulated)
 
 
+class MaskedDirectionalDWConv(nn.Module):
+    """Depthwise convolution constrained to one fixed orientation mask."""
+
+    def __init__(self, c1: int, mask: torch.Tensor):
+        """Initialize a masked 7x7 depthwise convolution."""
+        super().__init__()
+        k = int(mask.shape[-1])
+        self.weight = nn.Parameter(torch.empty(c1, 1, k, k))
+        self.bias = nn.Parameter(torch.zeros(c1))
+        self.register_buffer("mask", mask.view(1, 1, k, k))
+        nn.init.kaiming_normal_(self.weight, mode="fan_out", nonlinearity="relu")
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply masked depthwise convolution."""
+        k = self.weight.shape[-1]
+        return F.conv2d(x, self.weight * self.mask, self.bias, padding=k // 2, groups=x.shape[1])
+
+
+def _orientation_masks(k: int = 7) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Create horizontal, vertical, and two diagonal line masks."""
+    masks = []
+    center = k // 2
+    for orientation in range(4):
+        mask = torch.zeros(k, k)
+        for i in range(k):
+            if orientation == 0:
+                mask[center, i] = 1.0
+            elif orientation == 1:
+                mask[i, center] = 1.0
+            elif orientation == 2:
+                mask[i, i] = 1.0
+            else:
+                mask[i, k - 1 - i] = 1.0
+        masks.append(mask)
+    return tuple(masks)
+
+
+class GRALiteAttention(nn.Module):
+    """Lightweight GRA-style orientation routing for OBB head features.
+
+    The block adapts GRA's group-wise rotating and attention idea with fixed
+    orientation-masked depthwise kernels, avoiding MMDetection/MMCV and custom
+    rotated convolution dependencies.
+    """
+
+    def __init__(self, c1: int, expansion: float = 0.125, k: int = 7, max_mid: int = 96):
+        """Initialize orientation-masked branches and input-adaptive routing."""
+        super().__init__()
+        c_mid = max(min(int(c1 * expansion), max_mid), 32)
+        c_gate = max(c_mid // 4, 16)
+        self.reduce = ConvBNAct(c1, c_mid, 1, p=0)
+        self.branches = nn.ModuleList(MaskedDirectionalDWConv(c_mid, mask) for mask in _orientation_masks(k))
+        self.branch_bn = nn.BatchNorm2d(c_mid)
+        self.branch_act = nn.SiLU(inplace=True)
+        self.routing = nn.Sequential(
+            nn.Conv2d(c_mid, c_mid, 3, padding=1, groups=c_mid, bias=False),
+            nn.BatchNorm2d(c_mid),
+            nn.SiLU(inplace=True),
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(c_mid, c_gate, 1, bias=True),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(c_gate, 4, 1, bias=True),
+        )
+        self.group_gate = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(c_mid, c_gate, 1, bias=True),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(c_gate, c_mid, 1, bias=True),
+            nn.Sigmoid(),
+        )
+        self.spatial_gate = nn.Sequential(nn.Conv2d(2, 1, 7, padding=3, bias=True), nn.Sigmoid())
+        self.restore = ConvBNAct(c_mid, c1, 1, p=0)
+        self.softmax = nn.Softmax(dim=1)
+        self.gamma = nn.Parameter(torch.tensor(0.1))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Route features through orientation-aware masked depthwise branches."""
+        y = self.reduce(x)
+        branches = torch.stack([branch(y) for branch in self.branches], dim=1)
+        weights = self.softmax(self.routing(y)).unsqueeze(2)
+        oriented = (branches * weights).sum(dim=1)
+        oriented = self.branch_act(self.branch_bn(oriented))
+        pooled = torch.cat((torch.mean(oriented, dim=1, keepdim=True), torch.max(oriented, dim=1, keepdim=True)[0]), dim=1)
+        modulated = oriented * self.group_gate(oriented) * self.spatial_gate(pooled)
+        return x + self.gamma * self.restore(modulated)
+
+
 class C3k2Geo(C3k2):
     """C3k2 with lightweight directional geometry attention for OBB head features."""
 
@@ -292,3 +382,26 @@ class C3k2GeoPlus(C3k2):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply C3k2 followed by C-Dynamic-Plus geometry attention."""
         return self.geo(super().forward(x))
+
+
+class C3k2GRA(C3k2):
+    """C3k2 with lightweight GRA-style orientation routing for OBB head features."""
+
+    def __init__(
+        self,
+        c1: int,
+        c2: int,
+        n: int = 1,
+        c3k: bool = False,
+        e: float = 0.5,
+        attn: bool = False,
+        g: int = 1,
+        shortcut: bool = True,
+    ):
+        """Initialize C3k2 and append the GRA-Lite orientation block."""
+        super().__init__(c1, c2, n, c3k, e, attn, g, shortcut)
+        self.gra = GRALiteAttention(c2)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply C3k2 followed by lightweight GRA-style orientation routing."""
+        return self.gra(super().forward(x))

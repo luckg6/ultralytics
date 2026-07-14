@@ -49,7 +49,7 @@ python scripts/train_obb.py --config experiments/dior/baseline.yaml
 
 ## 当前 DIOR-R 阶段结果
 
-A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、B-PKI-Lite 和 A+B-PKI-Lite 已完成 `test` split 评估。A-P2 相对 baseline 有稳定提升，尤其是小目标指标提升明显；B-LSK 当前单独实验未带来提升；C-Dynamic 和 C-Dynamic-Plus 轻微正向但不强；新版 B-PKI-Lite 轻微正向；A+B-PKI-Lite 进一步超过 A-P2，是当前 DIOR-R test 上的最佳结果。
+A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、B-PKI-Lite、A+B-PKI-Lite 和 A+B-PKI-Lite+C-Plus 已完成 `test` split 评估。A-P2 相对 baseline 有稳定提升，尤其是小目标指标提升明显；B-LSK 当前单独实验未带来提升；C-Dynamic 和 C-Dynamic-Plus 轻微正向但不强；新版 B-PKI-Lite 轻微正向；A+B-PKI-Lite 进一步超过 A-P2，是当前 DIOR-R test 上的最佳结果。A+B-PKI-Lite+C-Plus 相比 baseline 仍明显提升，但低于 A+B-PKI-Lite，可作为三创新点融合消融记录。新版 C-GRA-Lite 已完成代码和配置，待训练验证。
 
 | 模型 | 权重路径 | Params | GFLOPs | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
 |---|---|---:|---:|---:|---:|---:|---:|
@@ -60,14 +60,16 @@ A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、B-PKI-Lite 和 A+B-PKI-Lite 已完�
 | C-Dynamic | `weights/experiments/dior/c_dynamic/best.pt` | 2,676,940 | 6.6 | 0.8562 | 0.6884 | 0.5173 | 0.3527 |
 | C-Dynamic-Plus | `weights/experiments/dior/c_dynamic_plus/best.pt` | 2,696,431 | 6.7 | 0.8588 | 0.6896 | 0.5268 | 0.3541 |
 | A+B-PKI-Lite | `weights/experiments/dior/ab_p2_pki_lite/best.pt` | 2,740,390 | 10.7 | 0.8859 | 0.7198 | 0.5958 | 0.4288 |
+| A+B-PKI-Lite+C-Plus | `weights/experiments/dior/abc_p2_pki_geo_plus/best.pt` | 2,784,390 | 11.1 | 0.8832 | 0.7149 | 0.5838 | 0.4242 |
 | A-P2 相对 baseline | - | +40,717 | +3.9 | +0.0191 | +0.0116 | +0.0684 | +0.0745 |
 | B-LSK 相对 baseline | - | +118,471 | +0.1 | -0.0008 | -0.0065 | -0.0076 | -0.0032 |
 | B-PKI-Lite 相对 baseline | - | +42,050 | +0.2 | +0.0000 | +0.0011 | +0.0103 | +0.0151 |
 | C-Dynamic 相对 baseline | - | +19,317 | +0.0 | -0.0026 | +0.0010 | +0.0027 | +0.0057 |
 | C-Dynamic-Plus 相对 baseline | - | +38,808 | +0.1 | +0.0000 | +0.0022 | +0.0122 | +0.0071 |
 | A+B-PKI-Lite 相对 baseline | - | +82,767 | +4.1 | +0.0271 | +0.0324 | +0.0812 | +0.0818 |
+| A+B-PKI-Lite+C-Plus 相对 baseline | - | +126,767 | +4.5 | +0.0244 | +0.0275 | +0.0692 | +0.0772 |
 
-轻量化对比：A-P2、B-PKI-Lite、C-Dynamic、C-Dynamic-Plus 相对 baseline 的参数增幅分别为 +1.53%、+1.58%、+0.73%、+1.46%；A+B-PKI-Lite 的评估摘要参数量为 2,740,390，相对 baseline 增加 82,767，增幅 +3.11%。
+轻量化对比：A-P2、B-PKI-Lite、C-Dynamic、C-Dynamic-Plus 相对 baseline 的参数增幅分别为 +1.53%、+1.58%、+0.73%、+1.46%；A+B-PKI-Lite 的评估摘要参数量为 2,740,390，相对 baseline 增加 82,767，增幅 +3.11%；A+B-PKI-Lite+C-Plus 的评估摘要参数量为 2,784,390，相对 baseline 增加 126,767，增幅 +4.77%。
 
 对应记录文件：
 
@@ -84,6 +86,8 @@ A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、B-PKI-Lite 和 A+B-PKI-Lite 已完�
 - `weights/experiments/dior/b_pki_lite/compare_with_baseline_a_b_lsk_c_dior_test_2026-07-11.md`
 - `weights/experiments/dior/ab_p2_pki_lite/eval_dior_test_2026-07-13.md`
 - `weights/experiments/dior/ab_p2_pki_lite/compare_with_baseline_a_b_pki_c_dior_test_2026-07-13.md`
+- `weights/experiments/dior/abc_p2_pki_geo_plus/eval_dior_test_2026-07-14.md`
+- `weights/experiments/dior/abc_p2_pki_geo_plus/compare_with_baseline_ab_cplus_dior_test_2026-07-14.md`
 
 ## 跨数据集 Baseline 原则
 
@@ -197,7 +201,21 @@ python scripts/train_obb.py --config experiments/dior/c_dynamic_plus_homews.yaml
 
 当前 test 评估摘要参数量为 2,696,431，相对 baseline 增加 38,808（+1.46%）；全尺度 mAP50-95 为 0.6896，小目标 mAP50-95 为 0.3541。
 
-A+B-PKI-Lite+C-Dynamic-Plus 三创新点融合实验已完成代码和配置。该结构保留 A 的 P2/4 检测分支，B-PKI-Lite 仍只作用于原 top-down neck 的 P5->P4、P4->P3 融合块，C-Dynamic-Plus 作用于 OBB(P2/P3/P4/P5) 四个最终输出融合层。本地检查命令：
+C-GRA-Lite 已完成代码和配置。该版本参考 ECCV 2024 GRA 的 group-wise rotating / attention 思想，但不直接迁移其 MMDetection/MMCV 工程；当前实现为 `C3k2GRA`，在 OBB head 的 P3/P4/P5 输出融合层使用水平、垂直、主对角、反对角四个方向掩码 depthwise 分支，并通过输入自适应 routing 做方向融合。材料已齐，不需要额外手动下载。建议先训单独 C-GRA-Lite：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/c_gra_lite_homews.yaml
+```
+
+如果 C-GRA-Lite 单点明显优于 C-Dynamic-Plus，再训练 A+B-PKI-Lite+C-GRA-Lite：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/abc_p2_pki_gra_lite_homews.yaml
+```
+
+当前构建检查参数量：C-GRA-Lite 为 2,751,259，A+B-PKI-Lite+C-GRA-Lite 为 2,885,382；本地和 `/home/ws` dry-run、预训练权重迁移、dummy forward 均正常。
+
+A+B-PKI-Lite+C-Dynamic-Plus 三创新点融合实验已完成训练和评估。该结构保留 A 的 P2/4 检测分支，B-PKI-Lite 仍只作用于原 top-down neck 的 P5->P4、P4->P3 融合块，C-Dynamic-Plus 作用于 OBB(P2/P3/P4/P5) 四个最终输出融合层。本地检查命令：
 
 ```bash
 python scripts/train_obb.py --config experiments/dior/abc_p2_pki_geo_plus.yaml --env local --dry-run
@@ -209,7 +227,7 @@ python scripts/train_obb.py --config experiments/dior/abc_p2_pki_geo_plus.yaml -
 python scripts/train_obb.py --config experiments/dior/abc_p2_pki_geo_plus_homews.yaml
 ```
 
-当前构建检查参数量为 2,863,110；从 `weights/pretrained/yolo11n-obb.pt` 可迁移 297/853 项权重，dummy forward 正常。
+当前 test 评估摘要参数量为 2,784,390，GFLOPs 为 11.1；全尺度 mAP50-95 为 0.7149，小目标 mAP50-95 为 0.4242。该结果明显高于 baseline，但低于 A+B-PKI-Lite，因此论文主结果候选仍建议使用 A+B-PKI-Lite，ABC 作为三创新点融合消融行保留。
 
 ## 验证脚本
 
@@ -226,6 +244,7 @@ python scripts/evaluate_obb.py --model weights/baselines/dior-r/yolo11n-obb-dior
 python scripts/evaluate_obb.py --model weights/experiments/dior/a_p2/best.pt --data DIOR.yaml --split test --mode both
 python scripts/evaluate_obb.py --model weights/experiments/dior/b_pki_lite/best.pt --data DIOR.yaml --split test --mode both
 python scripts/evaluate_obb.py --model weights/experiments/dior/c_dynamic/best.pt --data DIOR.yaml --split test --mode both
+python scripts/evaluate_obb.py --model weights/experiments/dior/abc_p2_pki_geo_plus/best.pt --data DIOR.yaml --split test --mode both
 python scripts/evaluate_obb.py --model path/to/best.pt --data DOTAv1.yaml --split test --mode all
 python scripts/evaluate_obb.py --model path/to/best.pt --data DIOR.yaml --mode small
 ```

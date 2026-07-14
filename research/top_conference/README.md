@@ -17,7 +17,7 @@
 | `internimage_dcnv3/` | InternImage / DCNv3 | CVPR 2023 | 动态空间采样/几何适应 | 中 |
 | `dynamic_head/` | Dynamic Head | CVPR 2021 | 检测头注意力备选 | 中 |
 | `pkinet_2024/` | PKINet / Poly Kernel Inception | CVPR 2024 | 遥感多尺度大核上下文 | 高 |
-| `gra_2024/` | GRA / Group-wise Rotating and Attention | ECCV 2024 | 旋转目标方向感知卷积 | 高 |
+| `gra_2024/` | GRA / Group-wise Rotating and Attention | ECCV 2024 | 旋转目标方向感知卷积，已落地为 C-GRA-Lite | 高 |
 | `freqfusion_2024/` | FreqFusion | TPAMI 2024 | 频率感知 neck 特征融合 | 高 |
 | `fdconv_2025/` | FDConv | CVPR 2025 | 频域动态卷积 | 中 |
 | `gaucho_2025/` | GauCho | CVPR 2025 | OBB 回归表示/角度边界问题 | 中 |
@@ -27,9 +27,10 @@
 ## 建议落地顺序
 
 1. A-P2 已经验证有效，保留为当前最强单点改进。
-2. B-LSK 当前无效，下一版 B 建议从 PKINet 的多尺度大核上下文、FreqFusion 的频率感知融合、或 CANConv 的遥感非局部自适应中重新选一个轻量改造。
-3. C-Dynamic 当前轻微正向，下一步优先做 A+C；如果还想强化 C，可参考 GRA 的 group-wise rotating 思路或 GauCho 的 OBB 表示方式。
-4. FDConv 和 YOLOv10 更适合作为后续效率/训练策略备选，不建议在当前论文主线里一次性改太多。
+2. B-LSK 当前无效，新版 B-PKI-Lite 已替代旧 B，并在 A+B 融合中取得当前最佳结果。
+3. C-Dynamic 和 C-Dynamic-Plus 均为轻微正向，A+B+C-Plus 未超过 A+B-PKI-Lite；新版 C-GRA-Lite 已按 GRA 的 group-wise rotating 思想做轻量适配，下一步优先训练单独 C-GRA-Lite。
+4. 如果 C-GRA-Lite 单点明显优于 C-Dynamic-Plus，再训练 A+B-PKI-Lite+C-GRA-Lite；GauCho 涉及 OBB 回归表示/loss，作为后续高风险扩展，不优先动主线。
+5. FDConv 和 YOLOv10 更适合作为后续效率/训练策略备选，不建议在当前论文主线里一次性改太多。
 
 ## 外部源码放置约定
 
