@@ -28,8 +28,8 @@ cos_lr: true
 
 ## 当前 DIOR-R 实验进展
 
-Baseline、A-P2、B-LSK、C-Dynamic、B-PKI-Lite 和 A+B-PKI-Lite 已完成 `test` split 评估。A-P2 相对 baseline 在全尺度和小目标指标上均有提升，可以作为有效消融基础；B-LSK 当前单独实验未提升；C-Dynamic 和 B-PKI-Lite 轻微正向；A+B-PKI-Lite 继续超过 A-P2，是当前最佳组合。
-C-Dynamic-Plus 已完成代码和配置，当前待训练，用于复验稍重一点的 C 方向几何适应模块。
+Baseline、A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、B-PKI-Lite 和 A+B-PKI-Lite 已完成 `test` split 评估。A-P2 相对 baseline 在全尺度和小目标指标上均有提升，可以作为有效消融基础；B-LSK 当前单独实验未提升；C-Dynamic、C-Dynamic-Plus 和 B-PKI-Lite 轻微正向；A+B-PKI-Lite 继续超过 A-P2，是当前最佳组合。
+A+B-PKI-Lite+C-Dynamic-Plus 已完成代码和配置，当前待训练。
 
 | 实验 | 配置 | 权重 | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 | 状态 |
 |---|---|---|---:|---:|---:|---:|---|
@@ -38,12 +38,14 @@ C-Dynamic-Plus 已完成代码和配置，当前待训练，用于复验稍重�
 | B-LSK | `experiments/dior/b_lsk.yaml` | `weights/experiments/dior/b_lsk/best.pt` | 0.8580 | 0.6809 | 0.5070 | 0.3438 | 未提升 |
 | B-PKI-Lite | `experiments/dior/b_pki_lite_homews.yaml` | `weights/experiments/dior/b_pki_lite/best.pt` | 0.8588 | 0.6885 | 0.5249 | 0.3621 | 小幅提升，已续训到 100，best 优于 last |
 | C-Dynamic | `experiments/dior/c_dynamic.yaml` | `weights/experiments/dior/c_dynamic/best.pt` | 0.8562 | 0.6884 | 0.5173 | 0.3527 | 小幅提升 |
-| C-Dynamic-Plus | `experiments/dior/c_dynamic_plus_homews.yaml` | 待训练 | - | - | - | - | ready |
+| C-Dynamic-Plus | `experiments/dior/c_dynamic_plus_homews.yaml` | `weights/experiments/dior/c_dynamic_plus/best.pt` | 0.8588 | 0.6896 | 0.5268 | 0.3541 | 小幅提升 |
 | A+B-PKI-Lite | `experiments/dior/ab_p2_pki_lite_homews.yaml` | `weights/experiments/dior/ab_p2_pki_lite/best.pt` | 0.8859 | 0.7198 | 0.5958 | 0.4288 | 当前最佳 |
+| A+B-PKI-Lite+C-Plus | `experiments/dior/abc_p2_pki_geo_plus_homews.yaml` | 待训练 | - | - | - | - | ready |
 | A-P2 相对 baseline | - | - | +0.0191 | +0.0116 | +0.0684 | +0.0745 | 有效 |
 | B-LSK 相对 baseline | - | - | -0.0008 | -0.0065 | -0.0076 | -0.0032 | 无效 |
 | B-PKI-Lite 相对 baseline | - | - | +0.0000 | +0.0011 | +0.0103 | +0.0151 | 轻微正向 |
 | C-Dynamic 相对 baseline | - | - | -0.0026 | +0.0010 | +0.0027 | +0.0057 | 轻微正向 |
+| C-Dynamic-Plus 相对 baseline | - | - | +0.0000 | +0.0022 | +0.0122 | +0.0071 | 轻微正向 |
 | A+B-PKI-Lite 相对 baseline | - | - | +0.0271 | +0.0324 | +0.0812 | +0.0818 | 最佳 |
 
 ### 参数量变化
@@ -56,8 +58,9 @@ C-Dynamic-Plus 已完成代码和配置，当前待训练，用于复验稍重�
 | A-P2 | 2,698,340 | +40,717 | +1.53% |
 | B-PKI-Lite | 2,699,673 | +42,050 | +1.58% |
 | C-Dynamic | 2,676,940 | +19,317 | +0.73% |
-| C-Dynamic-Plus | 2,734,555 | +76,932 | +2.90% |
+| C-Dynamic-Plus | 2,696,431 | +38,808 | +1.46% |
 | A+B-PKI-Lite | 2,740,390 | +82,767 | +3.11% |
+| A+B-PKI-Lite+C-Plus | 2,863,110 | +205,487 | +7.73% |
 
 详细记录见：
 
@@ -67,6 +70,8 @@ C-Dynamic-Plus 已完成代码和配置，当前待训练，用于复验稍重�
 - `weights/experiments/dior/b_lsk/compare_with_baseline_a_p2_dior_test_2026-07-09.md`
 - `weights/experiments/dior/c_dynamic/eval_dior_test_2026-07-10.md`
 - `weights/experiments/dior/c_dynamic/compare_with_baseline_a_p2_b_lsk_dior_test_2026-07-10.md`
+- `weights/experiments/dior/c_dynamic_plus/eval_dior_test_2026-07-14.md`
+- `weights/experiments/dior/c_dynamic_plus/compare_with_baseline_c_dior_test_2026-07-14.md`
 - `weights/experiments/dior/b_pki_lite/eval_dior_test_2026-07-11.md`
 - `weights/experiments/dior/b_pki_lite/compare_with_baseline_a_b_lsk_c_dior_test_2026-07-11.md`
 - `weights/experiments/dior/ab_p2_pki_lite/eval_dior_test_2026-07-13.md`
@@ -132,4 +137,16 @@ C-Dynamic-Plus `/home/ws` 服务器训练命令，服务器 batch 使用 `-1` �
 
 ```bash
 python scripts/train_obb.py --config experiments/dior/c_dynamic_plus_homews.yaml
+```
+
+A+B-PKI-Lite+C-Plus 本地训练前检查配置：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/abc_p2_pki_geo_plus.yaml --env local --dry-run
+```
+
+A+B-PKI-Lite+C-Plus `/home/ws` 服务器训练命令，服务器 batch 使用 `-1` 自动 batch，缓存使用 `ram`：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/abc_p2_pki_geo_plus_homews.yaml
 ```

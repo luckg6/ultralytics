@@ -1,0 +1,17 @@
+status: ready
+variant: ABC
+description: Server profile for A-P2 plus B-PKI-Lite plus C-Dynamic-Plus on /home/ws.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-abc-p2-pki-geo-plus.yaml
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: ultralytics/cfg/datasets/DIOR-homews.yaml
+name: dior_ABC_p2_pki_geo_plus
+epochs: 100
+batch: -1
+imgsz: 640
+seed: 42
+device: 0
+workers: 8
+cache: ram
+cos_lr: true
+amp: true
+deterministic: true

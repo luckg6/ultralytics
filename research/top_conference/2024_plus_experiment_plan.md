@@ -7,7 +7,8 @@
 - C-Dynamic 轻微正向，但单点说服力不足，适合与 A 融合或升级成更强方向感知模块。
 - B-PKI-Lite 已完成第一版评估，比旧 B-LSK 明显更好，小目标 mAP50-95 相对 baseline 提升 +0.0151；已续训到 100 epoch，但 last100 低于 best。
 - A+B-PKI-Lite 已完成 DIOR-R test 评估，是当前最佳结果：全尺度 mAP50-95 为 0.7198，小目标 mAP50-95 为 0.4288，相对 baseline 分别提升 +0.0324 和 +0.0818。
-- C-Dynamic-Plus 已完成代码和配置，作为稍重一点的 C 单点复验版本，参数量 2,734,555，相对 baseline 增加 +2.90%。
+- C-Dynamic-Plus 已完成训练和评估，作为稍重一点的 C 单点复验版本，比原 C-Dynamic 略好；全尺度 mAP50-95 为 0.6896，小目标 mAP50-95 为 0.3541，但单点提升仍不明显。
+- A+B-PKI-Lite+C-Plus 已完成代码和配置，当前待训练，用于验证三创新点简单叠加是否还能超过 A+B-PKI-Lite。
 
 ## 已完成：A+B-PKI-Lite 融合
 
@@ -26,7 +27,7 @@
 - 动机：A-P2 提供高分辨率小目标检测分支，C-Dynamic 提供轻量方向几何调制，两者可能互补。
 - 风险：A-P2 已经增加 GFLOPs，融合 C 后要继续保持 `batch=4`。
 
-## 优先级 2.5：C-Dynamic-Plus 单点复验
+## 已完成：C-Dynamic-Plus 单点复验
 
 - 实验名：`dior_C_dynamic_plus`
 - 配置：`experiments/dior/c_dynamic_plus.yaml`
@@ -34,7 +35,7 @@
 - 模型：`ultralytics/cfg/models/11/remote_obb/yolo11n-obb-c-dynamic-plus.yaml`
 - 模块：`C3k2GeoPlus`
 - 动机：原 C-Dynamic 参数只增加 +0.73%，单点提升较弱；C-Dynamic-Plus 在同一 OBB head 位置使用更强方向几何调制，争取让 C 单点更有说服力。
-- 当前状态：代码、配置、本地/服务器 dry-run、模型构建、预训练迁移和 dummy forward 均已通过。
+- 当前状态：已完成训练和 test 评估。相对 baseline，全尺度 mAP50-95 提升 +0.0022，小目标 mAP50-95 提升 +0.0071；相对 C-Dynamic，小目标 mAP50 提升 +0.0095，但小目标 mAP50-95 只提升 +0.0014。
 
 ## 已完成：重新设计 B，首选 PKINet 轻量版
 
@@ -90,7 +91,7 @@
 
 ```text
 短期：围绕 A+B-PKI-Lite 补第二数据集和论文表格
-补充：C-Dynamic-Plus -> A+C 或 A+B+C
+补充：A+B+C-Plus 已 ready，训练后决定是否保留；C-Dynamic-Plus 可作为 C 候选但优先级不高
 备选：B-FreqFuse -> C-GRA-Lite
 论文扩展：GauCho-style Gaussian auxiliary loss
 ```
