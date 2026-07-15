@@ -966,6 +966,7 @@ class v8OBBLoss(v8DetectionLoss):
     def __init__(self, model, tal_topk=10, tal_topk2: int | None = None):
         """Initialize v8OBBLoss with model, assigner, and rotated bbox loss; model must be de-paralleled."""
         super().__init__(model, tal_topk=tal_topk)
+        self.use_chol_aux = model.model[-1].__class__.__name__ == "OBBCholesky"
         self.assigner = RotatedTaskAlignedAssigner(
             topk=tal_topk,
             num_classes=self.nc,
@@ -997,7 +998,7 @@ class v8OBBLoss(v8DetectionLoss):
         """Calculate and return the loss for oriented bounding box detection."""
         pred_chol = preds.get("chol")
         use_chol = pred_chol is not None
-        loss = torch.zeros(5 if use_chol else 4, device=self.device)  # box, cls, dfl, angle, optional chol
+        loss = torch.zeros(5 if self.use_chol_aux else 4, device=self.device)  # box, cls, dfl, angle, optional chol
         pred_distri, pred_scores, pred_angle = (
             preds["boxes"].permute(0, 2, 1).contiguous(),
             preds["scores"].permute(0, 2, 1).contiguous(),
@@ -1081,7 +1082,7 @@ class v8OBBLoss(v8DetectionLoss):
         loss[1] *= self.hyp.cls  # cls gain
         loss[2] *= self.hyp.dfl  # dfl gain
         loss[3] *= self.hyp.angle  # angle gain
-        if use_chol:
+        if self.use_chol_aux:
             loss[4] *= getattr(self.hyp, "chol", 0.2)  # Cholesky/SPD auxiliary gain
 
         return loss * batch_size, loss.detach()  # loss(box, cls, dfl, angle, optional chol)
