@@ -10,7 +10,7 @@
 - C-Dynamic-Plus 已完成训练和评估，作为稍重一点的 C 单点复验版本，比原 C-Dynamic 略好；全尺度 mAP50-95 为 0.6896，小目标 mAP50-95 为 0.3541，但单点提升仍不明显。
 - A+B-PKI-Lite+C-Plus 已完成训练和评估，明显高于 baseline，但低于 A+B-PKI-Lite，说明当前三创新点简单叠加没有超过最佳双创新点组合。
 - C-GRA-Lite 已完成训练和评估，参考 ECCV 2024 GRA 的 group-wise rotating / attention 思想，用标准 PyTorch 的方向掩码 depthwise 分支做轻量适配；小目标略高于 baseline，但全尺度 mAP50-95 和小目标 mAP50-95 均弱于 C-Dynamic-Plus。
-- C-Chol-Lite 已完成代码和配置，明确避开 YOLO11 已有的 ProbIoU/Gaussian covariance/周期角度 loss，新增训练时 Cholesky/SPD 协方差辅助 head；当前待训练。
+- C-Chol-Lite 已完成训练和评估，明确避开 YOLO11 已有的 ProbIoU/Gaussian covariance/周期角度 loss，新增训练时 Cholesky/SPD 协方差辅助 head；全尺度 mAP50-95 为 0.6902，小目标 mAP50-95 为 0.3589，是当前最佳 C 单点。
 
 ## 已完成：A+B-PKI-Lite 融合
 
@@ -88,7 +88,7 @@
 - 后续组合：`experiments/dior/abc_p2_pki_gra_lite.yaml` 和 `experiments/dior/abc_p2_pki_gra_lite_homews.yaml` 已 ready，构建检查参数量为 2,885,382，从预训练权重可迁移 297/905 项。
 - 结论：不建议优先训练 ABC-GRA-Lite，继续改 C 时应换方向而不是加重 GRA。
 
-## 优先级 5：C-Chol-Lite 作为 OBB 几何辅助 head
+## 已完成：C-Chol-Lite 作为 OBB 几何辅助 head
 
 - 实验名：`dior_C_chol_lite`
 - 配置：`experiments/dior/c_chol_lite.yaml`
@@ -98,7 +98,8 @@
 - 参考目录：`research/top_conference/gaucho_2025/`
 - 动机：GauCho 启发 OBB 几何表征方向，但本仓库 YOLO11-OBB 已经有 ProbIoU、Gaussian covariance 相似度和周期角度 loss，所以不能再做普通 Gaussian loss。C-Chol-Lite 改为训练时额外预测 Cholesky/SPD 协方差参数，推理时仍使用原 YOLO11 OBB decode/NMS。
 - 检查状态：本地和 `/home/ws` dry-run 通过；C-Chol-Lite 从预训练权重可迁移 490/583 项，构建检查参数量为 2,767,516；ABC-Chol-Lite 从预训练权重可迁移 297/777 项，构建检查参数量为 2,897,906；训练态 5 项 loss 和 eval 态无 `chol` 输出均正常。
-- 风险：参数增幅高于 C-Dynamic-Plus；先训练单独 C-Chol-Lite，如果单点优于 C-Dynamic-Plus，再训练 ABC-Chol-Lite。
+- 当前状态：已完成训练和 test 评估。全尺度 mAP50-95 为 0.6902，小目标 mAP50-95 为 0.3589；相对 baseline 分别提升 +0.0028 和 +0.0119；相对 C-Dynamic-Plus 分别提升 +0.0006 和 +0.0048。
+- 结论：C-Chol-Lite 是当前最佳 C 单点，下一步建议训练 ABC-Chol-Lite，验证它是否比 A+B-PKI-Lite+C-Plus 更适合与 A/B 叠加。
 
 ## 暂不优先
 
@@ -110,7 +111,7 @@
 
 ```text
 短期：围绕 A+B-PKI-Lite 补第二数据集和论文表格
-补充：A+B+C-Plus 已完成但低于 A+B-PKI-Lite；C-GRA-Lite 已完成但弱于 C-Plus；C-Chol-Lite 已 ready，建议先训单点再训 ABC-Chol-Lite
+补充：A+B+C-Plus 已完成但低于 A+B-PKI-Lite；C-GRA-Lite 已完成但弱于 C-Plus；C-Chol-Lite 已完成且为当前最佳 C 单点，建议训练 ABC-Chol-Lite
 备选：B-FreqFuse -> 其他非重复 YOLO11 OBB loss/head 方向
 论文扩展：Cholesky/SPD auxiliary head 或 GauCho-style 表征讨论，但不要重复 YOLO11 已有 ProbIoU/Gaussian covariance
 ```

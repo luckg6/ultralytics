@@ -1,0 +1,17 @@
+status: ready
+variant: ABC
+description: One-off AutoDL RTX 3090 resume config for A-P2 + B-PKI-Lite + C-Chol-Lite.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-abc-p2-pki-chol-lite.yaml
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: ultralytics/cfg/datasets/DIOR-autodl.yaml
+name: dior_ABC_p2_pki_chol_lite
+epochs: 100
+batch: -1
+imgsz: 640
+seed: 42
+device: 0
+workers: 8
+cache: ram
+cos_lr: true
+amp: true
+deterministic: true
