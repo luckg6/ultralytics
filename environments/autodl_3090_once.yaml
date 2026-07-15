@@ -1,7 +1,7 @@
-# One-off AutoDL RTX 3090 resume profile.
+# One-off AutoDL dual RTX 3090 resume profile.
 
 data: ultralytics/cfg/datasets/DIOR-autodl.yaml
-device: 0
-batch: -1
+device: "0,1"
+batch: 16
 cache: ram
 workers: 8

@@ -1,11 +1,11 @@
-# AutoDL 3090 一次性续训说明
+# AutoDL 双 3090 一次性续训说明
 
 这份说明只服务本次 `dior_ABC_p2_pki_chol_lite` 续训。长期服务器仍优先使用 `/home/ws` 配置。
 
 ## 机器建议
 
-- GPU：RTX 3090 24GB
-- 镜像：PyTorch 镜像即可，截图里的 PyTorch 2.8.0 / Python 3.12 / CUDA 12.8 可以用。
+- GPU：RTX 3090 24GB * 2
+- 镜像：PyTorch 镜像即可，截图里的基础镜像可以用；如果已有 PyTorch，不要额外重装 torch。
 - 代码目录建议：`/root/autodl-tmp/ultralytics`
 - 数据集目录建议：`/root/autodl-tmp/datasets/YOLODIOR-R`
 
@@ -67,8 +67,8 @@ python scripts/train_obb.py \
 
 ```text
 data:   ultralytics/cfg/datasets/DIOR-autodl.yaml
-device: 0
-batch:  -1
+device: 0,1
+batch:  16
 cache:  ram
 ```
 
@@ -84,8 +84,9 @@ python scripts/train_obb.py \
 说明：
 
 - 断点已经单独准备为 `last_autodl3090.pt`，内部 `train_args` 指向 `/root/autodl-tmp/ultralytics/runs/obb/dior_ABC_p2_pki_chol_lite`。
-- `batch=-1` 会在 3090 上自动估计 batch；如果显存仍不稳，可改命令追加 `--batch 8` 或 `--batch 4`。
-- `cache=ram` 适合该机器 90GB 内存；如果数据集缓存失败，再追加 `--cache disk`。
+- 多卡 DDP 不支持 `batch=-1` 自动 batch，因此这次固定为 `batch=16`，即两张 3090 上每卡约 8。
+- 如果显存仍不稳，可在命令后追加 `--batch 8`；如果还不稳再用 `--batch 4`，但 batch 必须是 GPU 数量 2 的倍数。
+- `cache=ram` 适合该机器 180GB 内存；如果数据集缓存失败，再追加 `--cache disk`。
 
 ## 训练后回传
 
