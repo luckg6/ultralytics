@@ -20,7 +20,18 @@ from .conv import Conv, DWConv
 from .transformer import MLP, DeformableTransformerDecoder, DeformableTransformerDecoderLayer
 from .utils import bias_init_with_prob, linear_init
 
-__all__ = "OBB", "Classify", "Detect", "Pose", "RTDETRDecoder", "Segment", "YOLOEDetect", "YOLOESegment", "v10Detect"
+__all__ = (
+    "OBB",
+    "OBBCholesky",
+    "Classify",
+    "Detect",
+    "Pose",
+    "RTDETRDecoder",
+    "Segment",
+    "YOLOEDetect",
+    "YOLOESegment",
+    "v10Detect",
+)
 
 
 class Detect(nn.Module):
@@ -508,6 +519,58 @@ class OBB(Detect):
     def fuse(self) -> None:
         """Remove the one2many head for inference optimization."""
         self.cv2 = self.cv3 = self.cv4 = None
+
+
+class OBBCholesky(OBB):
+    """OBB head with a training-only Cholesky/SPD geometry auxiliary branch.
+
+    The normal YOLO11-OBB inference path is unchanged. During training, this
+    branch predicts three Cholesky parameters per anchor so the loss can guide
+    the shared head features toward rotated-box covariance structure.
+    """
+
+    def __init__(self, nc: int = 80, ne: int = 1, reg_max=16, end2end=False, ch: tuple = ()):
+        """Initialize OBB plus a lightweight 3-parameter Cholesky auxiliary head."""
+        super().__init__(nc, ne, reg_max, end2end, ch)
+        c5 = max(ch[0] // 4, 16)
+        self.cv5 = nn.ModuleList(nn.Sequential(Conv(x, c5, 3), Conv(c5, c5, 3), nn.Conv2d(c5, 3, 1)) for x in ch)
+        if end2end:
+            self.one2one_cv5 = copy.deepcopy(self.cv5)
+
+    @property
+    def one2many(self):
+        """Return one-to-many OBB heads plus the Cholesky auxiliary head."""
+        return dict(box_head=self.cv2, cls_head=self.cv3, angle_head=self.cv4, chol_head=self.cv5)
+
+    @property
+    def one2one(self):
+        """Return one-to-one OBB heads plus the Cholesky auxiliary head."""
+        return dict(
+            box_head=self.one2one_cv2,
+            cls_head=self.one2one_cv3,
+            angle_head=self.one2one_cv4,
+            chol_head=self.one2one_cv5,
+        )
+
+    def forward_head(
+        self,
+        x: list[torch.Tensor],
+        box_head: torch.nn.Module,
+        cls_head: torch.nn.Module,
+        angle_head: torch.nn.Module,
+        chol_head: torch.nn.Module = None,
+    ) -> dict[str, torch.Tensor]:
+        """Return OBB predictions and, during training, Cholesky auxiliary predictions."""
+        preds = super().forward_head(x, box_head, cls_head, angle_head)
+        if self.training and chol_head is not None:
+            bs = x[0].shape[0]
+            preds["chol"] = torch.cat([chol_head[i](x[i]).view(bs, 3, -1) for i in range(self.nl)], dim=2)
+        return preds
+
+    def fuse(self) -> None:
+        """Remove heads for fused inference."""
+        super().fuse()
+        self.cv5 = None
 
 
 class OBB26(OBB):

@@ -995,12 +995,16 @@ class v8OBBLoss(v8DetectionLoss):
 
     def loss(self, preds: dict[str, torch.Tensor], batch: dict[str, torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
         """Calculate and return the loss for oriented bounding box detection."""
-        loss = torch.zeros(4, device=self.device)  # box, cls, dfl, angle
+        pred_chol = preds.get("chol")
+        use_chol = pred_chol is not None
+        loss = torch.zeros(5 if use_chol else 4, device=self.device)  # box, cls, dfl, angle, optional chol
         pred_distri, pred_scores, pred_angle = (
             preds["boxes"].permute(0, 2, 1).contiguous(),
             preds["scores"].permute(0, 2, 1).contiguous(),
             preds["angle"].permute(0, 2, 1).contiguous(),
         )
+        if use_chol:
+            pred_chol = pred_chol.permute(0, 2, 1).contiguous()
         anchor_points, stride_tensor = make_anchors(preds["feats"], self.stride, 0.5)
         batch_size = pred_angle.shape[0]  # batch size
 
@@ -1064,15 +1068,23 @@ class v8OBBLoss(v8DetectionLoss):
             loss[3] = self.calculate_angle_loss(
                 pred_bboxes, target_bboxes, fg_mask, weight, target_scores_sum
             )  # angle loss
+            if use_chol:
+                loss[4] = self.calculate_cholesky_loss(
+                    pred_chol, target_bboxes, fg_mask, weight, target_scores_sum
+                )
         else:
             loss[0] += (pred_angle * 0).sum()
+            if use_chol:
+                loss[4] += (pred_chol * 0).sum()
 
         loss[0] *= self.hyp.box  # box gain
         loss[1] *= self.hyp.cls  # cls gain
         loss[2] *= self.hyp.dfl  # dfl gain
         loss[3] *= self.hyp.angle  # angle gain
+        if use_chol:
+            loss[4] *= getattr(self.hyp, "chol", 0.2)  # Cholesky/SPD auxiliary gain
 
-        return loss * batch_size, loss.detach()  # loss(box, cls, dfl, angle)
+        return loss * batch_size, loss.detach()  # loss(box, cls, dfl, angle, optional chol)
 
     def bbox_decode(
         self, anchor_points: torch.Tensor, pred_dist: torch.Tensor, pred_angle: torch.Tensor
@@ -1122,6 +1134,39 @@ class v8OBBLoss(v8DetectionLoss):
         ang_loss = ang_loss * weight
 
         return ang_loss.sum() / target_scores_sum
+
+    def calculate_cholesky_loss(
+        self,
+        pred_chol: torch.Tensor,
+        target_bboxes: torch.Tensor,
+        fg_mask: torch.Tensor,
+        weight: torch.Tensor,
+        target_scores_sum: torch.Tensor,
+        eps: float = 1e-7,
+    ) -> torch.Tensor:
+        """Calculate a training-only Cholesky/SPD covariance auxiliary loss for OBB geometry."""
+        target = target_bboxes[fg_mask]
+        chol = pred_chol[fg_mask]
+
+        w, h, theta = target[..., 2:3], target[..., 3:4], target[..., 4:5]
+        var_w, var_h = w.pow(2) / 12.0, h.pow(2) / 12.0
+        cos, sin = theta.cos(), theta.sin()
+        a = var_w * cos.pow(2) + var_h * sin.pow(2)
+        b = var_w * sin.pow(2) + var_h * cos.pow(2)
+        c = (var_w - var_h) * cos * sin
+
+        l11 = F.softplus(chol[..., 0:1]) + eps
+        l21 = chol[..., 1:2]
+        l22 = F.softplus(chol[..., 2:3]) + eps
+        pred_a = l11.pow(2)
+        pred_b = l21.pow(2) + l22.pow(2)
+        pred_c = l11 * l21
+
+        trace = (a + b).detach().clamp_min(eps)
+        pred_cov = torch.cat((pred_a / trace, pred_b / trace, pred_c / trace), dim=-1)
+        target_cov = torch.cat((a / trace, b / trace, c / trace), dim=-1)
+        chol_loss = F.smooth_l1_loss(pred_cov, target_cov, reduction="none").sum(-1)
+        return (chol_loss * weight).sum() / target_scores_sum
 
 
 class E2EDetectLoss:

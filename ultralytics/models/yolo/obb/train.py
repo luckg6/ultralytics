@@ -7,8 +7,10 @@ from pathlib import Path
 from typing import Any
 
 from ultralytics.models import yolo
+from ultralytics.nn.modules import OBBCholesky
 from ultralytics.nn.tasks import OBBModel
 from ultralytics.utils import DEFAULT_CFG, RANK
+from ultralytics.utils.torch_utils import unwrap_model
 
 
 class OBBTrainer(yolo.detect.DetectionTrainer):
@@ -73,7 +75,12 @@ class OBBTrainer(yolo.detect.DetectionTrainer):
 
     def get_validator(self):
         """Return an instance of OBBValidator for validation of YOLO model."""
-        self.loss_names = "box_loss", "cls_loss", "dfl_loss", "angle_loss"
+        model = unwrap_model(self.model)
+        self.loss_names = (
+            ("box_loss", "cls_loss", "dfl_loss", "angle_loss", "chol_loss")
+            if isinstance(model.model[-1], OBBCholesky)
+            else ("box_loss", "cls_loss", "dfl_loss", "angle_loss")
+        )
         return yolo.obb.OBBValidator(
             self.test_loader, save_dir=self.save_dir, args=copy(self.args), _callbacks=self.callbacks
         )
