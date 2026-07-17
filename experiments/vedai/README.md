@@ -165,7 +165,7 @@ AB-Plus 相对旧 AB 四项指标回升 `+0.0080/+0.0269/+0.0181/+0.0281`，但�
 
 权重已归档至 `weights/experiments/vedai/ab_p2_plus_pki_lite/best.pt`，日志已整理至 `experiments/logs/vedai/ab_p2_plus_pki_lite/`。
 
-## 待训练 AB-Plus-Decoupled
+## AB-Plus-Decoupled 实验
 
 串联 AB-Plus 中 B 改变了送入 P2SemanticGuard 的 P3 特征，导致 A-Plus 的误检抑制失效。AB-Plus-Decoupled 改为双路 neck：
 
@@ -200,3 +200,57 @@ python scripts/evaluate_obb.py --model runs/obb/vedai_f10_AB_p2_plus_pki_decoupl
 ```
 
 必须首先超过 baseline 四项 `0.7300/0.5661/0.6831/0.5293`。最终成功标准是超过 B 的全尺度 `0.7482/0.5756` 与 A-P2-Plus 的小目标 `0.7054/0.5444`。
+
+解耦版已使用固定 `batch=32` 配置训练完成：
+
+| 模型 | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
+|---|---:|---:|---:|---:|
+| baseline | 0.7300 | 0.5661 | 0.6831 | 0.5293 |
+| B-PKI-Lite | **0.7482** | **0.5756** | 0.7014 | 0.5365 |
+| A-P2-Plus | 0.7310 | 0.5507 | **0.7054** | **0.5444** |
+| 串联 AB-Plus | 0.6862 | 0.5263 | 0.6501 | 0.4955 |
+| AB-Plus-Decoupled | 0.7336 | 0.5487 | 0.6768 | 0.5222 |
+
+解耦版相对串联版四项回升 `+0.0474/+0.0224/+0.0267/+0.0267`，且全尺度 mAP50 比 baseline 高 `0.0036`，证明解耦有效。但其余三项仍比 baseline 低 `0.0174/0.0063/0.0071`，因此还不能作为成功 AB 结果。
+
+训练后两个融合门的平均幅度只有约 1.2%，但 P2Guard 抑制强度仍比单独 A-Plus 弱。后续若继续，应用已训练 A-P2-Plus 权重初始化并保护主路，只训练 B 辅助路径和残差门，不再从通用预训练权重联合重训全模型。
+
+权重已归档至 `weights/experiments/vedai/ab_p2_plus_pki_decoupled/best.pt`，日志已整理至 `experiments/logs/vedai/ab_p2_plus_pki_decoupled/`。
+
+## 待训练 AB-PKI-Heavy
+
+AB-PKI-Heavy 不使用双路、残差门或阶段式初始化，仍从与其他消融相同的 `yolo11n-obb.pt` 独立起训。结构是单路径加宽加深：
+
+- P2Guard 之前保持普通 P5→P4→P3 路径，B 不再改变 P2 输入。
+- P2 实际通道从 A-Plus 的 48 提高到 64，有效重复保持 2。
+- 最终 P3/P4 融合改为实际 96/160 通道的 `C3k2PKI`，有效重复数均为 2，隐藏扩展率为 0.75。
+- P5 保持原尺度，OBB 仍输出 P2/P3/P4/P5，不改 loss、解码和 NMS。
+
+| 构建口径 | Params | GFLOPs | 相对 baseline Params |
+|---|---:|---:|---:|
+| baseline | 2,663,262 | 6.6 | - |
+| A-P2-Plus | 2,803,925 | 13.8 | +5.28% |
+| AB-Plus-Decoupled | 2,989,559 | 14.8 | +12.25% |
+| AB-PKI-Heavy | 3,580,431 | 20.2 | +34.44% |
+
+尽管相对参数增幅较大，其绝对参数仍只有约 3.6M，且增量集中于小目标多尺度 neck，不是直接替换为更大 backbone。论文中应将其明确标为 Heavy 版本。
+
+本地训练：
+
+```bash
+python scripts/train_obb.py --config experiments/vedai/ab_p2_plus_pki_heavy.yaml
+```
+
+`/home/ws` 固定 `batch=32`、1 号 GPU、RAM cache：
+
+```bash
+python scripts/train_obb.py --config experiments/vedai/ab_p2_plus_pki_heavy_homews_batch32.yaml
+```
+
+训练完成后评估：
+
+```bash
+python scripts/evaluate_obb.py --model runs/obb/vedai_f10_AB_p2_plus_pki_heavy/weights/best.pt --data VEDAI-1024-homews.yaml --split test --mode both
+```
+
+成功标准不变：全尺度超过 B 的 `0.7482/0.5756`，同时小目标超过 A-P2-Plus 的 `0.7054/0.5444`。

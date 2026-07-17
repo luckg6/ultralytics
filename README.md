@@ -129,7 +129,9 @@ VEDAI-1024 四组固定 `batch=32` 筛选已完成。B-PKI-Lite 在 fold10 test 
 
 VEDAI AB-Plus 已完成训练和评估。它使用 A-Plus 的 P2 语义守门，并只在 P5→P4、P4→P3 两个原 top-down 融合块使用 B-PKI-Lite。fold10 test 全尺度/小目标 mAP50-95 为 0.5263/0.4955，仍低于 baseline 的 0.5661/0.5293。AB-Plus 比旧 AB 明显改善，但当前串联方式下 B 冲淡了 A-Plus 的误检抑制，未实现预期互补。
 
-针对串联干扰，已新增 VEDAI AB-Plus-Decoupled：完整保留 A-P2-Plus 主路，B-PKI-Lite 使用独立 top-down 辅助路径，并通过零初始化逐通道残差门只在最终 P3/P4 特征注入。构建参数量 2,989,559，14.8 GFLOPs，相对 baseline 参数约 `+12.25%`；本地和 `/home/ws` 配置已 ready。
+针对串联干扰新增的 VEDAI AB-Plus-Decoupled 已完成训练和评估。它完整保留 A-P2-Plus 主路，B-PKI-Lite 使用独立 top-down 辅助路径，并通过零初始化逐通道残差门只在最终 P3/P4 特征注入。fold10 test 四项为 0.7336/0.5487/0.6768/0.5222，比串联 AB-Plus 明显恢复，但只有全尺度 mAP50 超过 baseline，尚未达到 AB 成功标准。
+
+为进一步优先追求 VEDAI 精度，已新增结构更直接的 AB-PKI-Heavy：使用单路径，P2Guard 之前保持普通融合，将 B-PKI 后移到最终 P3/P4 层，并同时增加 P2/P3/P4 通道和深度。构建参数量 3,580,431，20.2 GFLOPs，本地与 `/home/ws` 固定 `batch=32` 配置已 ready。
 
 ## 实验矩阵
 
