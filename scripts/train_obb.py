@@ -189,6 +189,8 @@ def main() -> None:
         print(f"device:     {device}")
         print(f"cache:      {cache}")
         print(f"workers:    {workers}")
+        if "set_hbs" in cfg:
+            print(f"set_hbs:   {cfg['set_hbs']}")
         return
 
     ensure_amp_check_weight()
@@ -213,6 +215,7 @@ def main() -> None:
         workers=workers,
         cache=cache,
         cos_lr=as_bool(cfg.get("cos_lr", True)),
+        set_hbs=float(cfg.get("set_hbs", 1.0)),
         project=cfg.get("project"),
         name=name,
     )

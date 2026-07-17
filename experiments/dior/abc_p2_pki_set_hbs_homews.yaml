@@ -1,0 +1,18 @@
+status: ready
+variant: ABC
+description: A-P2 plus B-PKI-Lite plus training-only SET-HBS auxiliary supervision on /home/ws.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-abc-p2-pki-set-hbs.yaml
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: ultralytics/cfg/datasets/DIOR-homews.yaml
+name: dior_ABC_p2_pki_set_hbs
+epochs: 100
+batch: -1
+imgsz: 640
+seed: 42
+device: 0
+workers: 8
+cache: ram
+cos_lr: true
+amp: true
+deterministic: true
+set_hbs: 1.0

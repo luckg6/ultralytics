@@ -22,6 +22,7 @@ from ultralytics.nn.modules import (
     OBB,
     OBB26,
     OBBCholesky,
+    OBBSETHBS,
     PSA,
     SPP,
     SPPELAN,
@@ -1711,6 +1712,7 @@ def parse_model(d, ch, verbose=True):
                 OBB,
                 OBB26,
                 OBBCholesky,
+                OBBSETHBS,
             }
         ):
             args.extend([reg_max, end2end, [ch[x] for x in f]])
@@ -1728,6 +1730,7 @@ def parse_model(d, ch, verbose=True):
                 OBB,
                 OBB26,
                 OBBCholesky,
+                OBBSETHBS,
             }:
                 m.legacy = legacy
         elif m is v10Detect:

@@ -28,7 +28,7 @@ cos_lr: true
 
 ## 当前 DIOR-R 实验进展
 
-Baseline、A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、C-GRA-Lite、C-Chol-Lite、B-PKI-Lite、A+B-PKI-Lite 和 A+B-PKI-Lite+C-Plus 已完成 `test` split 评估。A-P2 相对 baseline 在全尺度和小目标指标上均有提升，可以作为有效消融基础；B-LSK 当前单独实验未提升；C-Chol-Lite 是当前最好的 C 单点，全尺度 mAP50-95 和小目标 mAP50-95 均超过 C-Dynamic-Plus；A+B-PKI-Lite 继续超过 A-P2，是当前最佳组合；A+B-PKI-Lite+C-Plus 明显高于 baseline，但低于 A+B-PKI-Lite，可作为三创新点融合消融记录。下一步可训练 ABC-Chol-Lite，验证新的 C 是否能与 A+B 互补。
+Baseline、A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、C-GRA-Lite、C-Chol-Lite、B-PKI-Lite、A+B-PKI-Lite、A+B-PKI-Lite+C-Plus 和 A+B-PKI-Lite+C-Chol-Lite 已完成 `test` split 评估。A+B-PKI-Lite 是当前最佳组合；A+B-PKI-Lite+C-Chol-Lite 没有超过 AB。新的 A+B-PKI-Lite+C-SET-HBS 已完成代码和一键训练配置，当前待训练，目标是同时超过 AB 的全尺度和小目标指标。
 
 | 实验 | 配置 | 权重 | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 | 状态 |
 |---|---|---|---:|---:|---:|---:|---|
@@ -40,10 +40,12 @@ Baseline、A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、C-GRA-Lite、C-Chol-Lite�
 | C-Dynamic-Plus | `experiments/dior/c_dynamic_plus_homews.yaml` | `weights/experiments/dior/c_dynamic_plus/best.pt` | 0.8588 | 0.6896 | 0.5268 | 0.3541 | 小幅提升 |
 | C-GRA-Lite | `experiments/dior/c_gra_lite_homews.yaml` | `weights/experiments/dior/c_gra_lite/best.pt` | 0.8583 | 0.6861 | 0.5219 | 0.3522 | 弱于 C-Plus |
 | C-Chol-Lite | `experiments/dior/c_chol_lite_homews.yaml` | `weights/experiments/dior/c_chol_lite/best.pt` | 0.8577 | 0.6902 | 0.5282 | 0.3589 | 当前最佳 C 单点 |
+| C-SET-HBS | `experiments/dior/c_set_hbs_homews.yaml` | 待训练 | - | - | - | - | 配置 ready |
 | A+B-PKI-Lite | `experiments/dior/ab_p2_pki_lite_homews.yaml` | `weights/experiments/dior/ab_p2_pki_lite/best.pt` | 0.8859 | 0.7198 | 0.5958 | 0.4288 | 当前最佳 |
 | A+B-PKI-Lite+C-Plus | `experiments/dior/abc_p2_pki_geo_plus_homews.yaml` | `weights/experiments/dior/abc_p2_pki_geo_plus/best.pt` | 0.8832 | 0.7149 | 0.5838 | 0.4242 | 高于 baseline，低于 AB |
 | A+B-PKI-Lite+C-GRA-Lite | `experiments/dior/abc_p2_pki_gra_lite_homews.yaml` | 待训练 | - | - | - | - | C 单点弱于 C-Plus，暂不优先 |
-| A+B-PKI-Lite+C-Chol-Lite | `experiments/dior/abc_p2_pki_chol_lite_homews.yaml` | 待训练 | - | - | - | - | 建议下一步训练 |
+| A+B-PKI-Lite+C-Chol-Lite | `experiments/dior/abc_p2_pki_chol_lite_homews.yaml` | `weights/experiments/dior/abc_p2_pki_chol_lite/best.pt` | 0.8862 | 0.7190 | 0.5774 | 0.4209 | 高于 baseline，mAP50 略高于 AB |
+| A+B-PKI-Lite+C-SET-HBS | `experiments/dior/abc_p2_pki_set_hbs_homews.yaml` | 待训练 | - | - | - | - | 配置 ready，下一组优先 ABC |
 | A-P2 相对 baseline | - | - | +0.0191 | +0.0116 | +0.0684 | +0.0745 | 有效 |
 | B-LSK 相对 baseline | - | - | -0.0008 | -0.0065 | -0.0076 | -0.0032 | 无效 |
 | B-PKI-Lite 相对 baseline | - | - | +0.0000 | +0.0011 | +0.0103 | +0.0151 | 轻微正向 |
@@ -53,6 +55,7 @@ Baseline、A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、C-GRA-Lite、C-Chol-Lite�
 | C-Chol-Lite 相对 baseline | - | - | -0.0011 | +0.0028 | +0.0136 | +0.0119 | 当前最佳 C 单点 |
 | A+B-PKI-Lite 相对 baseline | - | - | +0.0271 | +0.0324 | +0.0812 | +0.0818 | 最佳 |
 | A+B-PKI-Lite+C-Plus 相对 baseline | - | - | +0.0244 | +0.0275 | +0.0692 | +0.0772 | 强于 baseline，低于 AB |
+| A+B-PKI-Lite+C-Chol-Lite 相对 baseline | - | - | +0.0274 | +0.0316 | +0.0628 | +0.0739 | 强于 baseline，低于 AB 的 mAP50-95/小目标 |
 
 ### 参数量变化
 
@@ -67,10 +70,12 @@ Baseline、A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、C-GRA-Lite、C-Chol-Lite�
 | C-Dynamic-Plus | 2,696,431 | +38,808 | +1.46% |
 | C-GRA-Lite | 2,713,135 | +55,512 | +2.09% |
 | C-Chol-Lite | 2,729,296 | +71,673 | +2.70% |
+| C-SET-HBS（预计摘要口径） | 约 2,706,311 | 约 +48,688 | 约 +1.83% |
 | A+B-PKI-Lite | 2,740,390 | +82,767 | +3.11% |
 | A+B-PKI-Lite+C-Plus | 2,784,390 | +126,767 | +4.77% |
 | A+B-PKI-Lite+C-GRA-Lite | 2,885,382 | +227,759 | +8.57% |
-| A+B-PKI-Lite+C-Chol-Lite | 2,897,906 | +240,283 | +9.04% |
+| A+B-PKI-Lite+C-Chol-Lite | 2,819,058 | +161,435 | +6.07% |
+| A+B-PKI-Lite+C-SET-HBS（预计摘要口径） | 约 2,789,758 | 约 +132,135 | 约 +4.97% |
 
 详细记录见：
 
@@ -92,6 +97,8 @@ Baseline、A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、C-GRA-Lite、C-Chol-Lite�
 - `weights/experiments/dior/ab_p2_pki_lite/compare_with_baseline_a_b_pki_c_dior_test_2026-07-13.md`
 - `weights/experiments/dior/abc_p2_pki_geo_plus/eval_dior_test_2026-07-14.md`
 - `weights/experiments/dior/abc_p2_pki_geo_plus/compare_with_baseline_ab_cplus_dior_test_2026-07-14.md`
+- `weights/experiments/dior/abc_p2_pki_chol_lite/eval_dior_test_2026-07-16.md`
+- `weights/experiments/dior/abc_p2_pki_chol_lite/compare_with_baseline_ab_cplus_dior_test_2026-07-16.md`
 
 ## 命令
 
@@ -214,3 +221,26 @@ A+B-PKI-Lite+C-Chol-Lite `/home/ws` 服务器训练命令，服务器 batch 使�
 ```bash
 python scripts/train_obb.py --config experiments/dior/abc_p2_pki_chol_lite_homews.yaml
 ```
+
+A+B-PKI-Lite+C-SET-HBS 本地训练前检查配置：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/abc_p2_pki_set_hbs.yaml --env local --dry-run
+```
+
+A+B-PKI-Lite+C-SET-HBS `/home/ws` 一键训练命令，服务器配置固定使用 `batch=-1`、`cache=ram`：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/abc_p2_pki_set_hbs_homews.yaml
+```
+
+该实验参考 CVPR 2025 SET 的 HBS 模块，只在训练期增加旋转 GT 前景保护和背景平滑辅助监督，推理路径仍为 A+B-PKI-Lite。DIOR `nc=20` 构建参数求和为 2,797,774，HBS 比 AB 增加 49,368；最终 Params 和 GFLOPs 以训练后 `best.pt` 的统一评估摘要为准。
+
+对应的单独 C-SET-HBS 配置也已 ready，用于最终消融表：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/c_set_hbs.yaml --env local
+python scripts/train_obb.py --config experiments/dior/c_set_hbs_homews.yaml
+```
+
+单独 C 的 DIOR `nc=20` 构建参数求和为 2,714,095，HBS 相对 baseline 增加 48,688（约 +1.83%）。

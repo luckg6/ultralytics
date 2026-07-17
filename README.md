@@ -8,7 +8,7 @@
 - 论文定位：EI 会议论文 + 毕业学位论文。
 - 基础模型：`weights/pretrained/yolo11n-obb.pt`。
 - 主数据集：DIOR-R。
-- 第二数据集候选：DOTA-v1.0 或 HRSC2016。
+- 第二数据集：UCAS-AOD，已转换为 Ultralytics YOLO-OBB 格式并完成 baseline/A/B/AB 一键训练配置。
 - 论文实验目标：设计 3 个轻量、可解释、可消融的模型改进点，并验证单独改进和组合改进的效果。
 
 ## 当前 Baseline
@@ -49,7 +49,7 @@ python scripts/train_obb.py --config experiments/dior/baseline.yaml
 
 ## 当前 DIOR-R 阶段结果
 
-A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、C-GRA-Lite、C-Chol-Lite、B-PKI-Lite、A+B-PKI-Lite 和 A+B-PKI-Lite+C-Plus 已完成 `test` split 评估。A-P2 相对 baseline 有稳定提升，尤其是小目标指标提升明显；B-LSK 当前单独实验未带来提升；C-Chol-Lite 是当前最好的 C 单点，全尺度 mAP50-95 和小目标 mAP50-95 均超过 C-Dynamic-Plus；新版 B-PKI-Lite 轻微正向；A+B-PKI-Lite 进一步超过 A-P2，是当前 DIOR-R test 上的最佳结果。A+B-PKI-Lite+C-Plus 相比 baseline 仍明显提升，但低于 A+B-PKI-Lite，可作为三创新点融合消融记录。下一步可训练 A+B-PKI-Lite+C-Chol-Lite，验证新的 C 是否能改善 ABC 组合。
+A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、C-GRA-Lite、C-Chol-Lite、B-PKI-Lite、A+B-PKI-Lite、A+B-PKI-Lite+C-Plus 和 A+B-PKI-Lite+C-Chol-Lite 已完成 `test` split 评估。A-P2 相对 baseline 有稳定提升，尤其是小目标指标提升明显；B-LSK 当前单独实验未带来提升；C-Chol-Lite 是当前最好的已完成 C 单点；新版 B-PKI-Lite 轻微正向；A+B-PKI-Lite 进一步超过 A-P2，仍是当前 DIOR-R test 上的主结果候选。A+B-PKI-Lite+C-Chol-Lite 相比 baseline 明显提升，但 mAP50-95 和小目标指标仍低于 A+B-PKI-Lite。新的 A+B-PKI-Lite+C-SET-HBS 已完成代码、论文归档和训练配置，目标是通过训练期背景平滑辅助监督同时超过 AB 的全尺度与小目标指标，当前待训练验证。
 
 | 模型 | 权重路径 | Params | GFLOPs | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
 |---|---|---:|---:|---:|---:|---:|---:|
@@ -61,8 +61,11 @@ A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、C-GRA-Lite、C-Chol-Lite、B-PKI-Lit
 | C-Dynamic-Plus | `weights/experiments/dior/c_dynamic_plus/best.pt` | 2,696,431 | 6.7 | 0.8588 | 0.6896 | 0.5268 | 0.3541 |
 | C-GRA-Lite | `weights/experiments/dior/c_gra_lite/best.pt` | 2,713,135 | 6.7 | 0.8583 | 0.6861 | 0.5219 | 0.3522 |
 | C-Chol-Lite | `weights/experiments/dior/c_chol_lite/best.pt` | 2,729,296 | 6.6 | 0.8577 | 0.6902 | 0.5282 | 0.3589 |
+| C-SET-HBS（待训练） | 待训练 | 约 2,706,311 | baseline 推理路径 | - | - | - | - |
 | A+B-PKI-Lite | `weights/experiments/dior/ab_p2_pki_lite/best.pt` | 2,740,390 | 10.7 | 0.8859 | 0.7198 | 0.5958 | 0.4288 |
 | A+B-PKI-Lite+C-Plus | `weights/experiments/dior/abc_p2_pki_geo_plus/best.pt` | 2,784,390 | 11.1 | 0.8832 | 0.7149 | 0.5838 | 0.4242 |
+| A+B-PKI-Lite+C-Chol-Lite | `weights/experiments/dior/abc_p2_pki_chol_lite/best.pt` | 2,819,058 | 10.7 | 0.8862 | 0.7190 | 0.5774 | 0.4209 |
+| A+B-PKI-Lite+C-SET-HBS（待训练） | 待训练 | 约 2,789,758 | 与 AB 推理路径相同 | - | - | - | - |
 | A-P2 相对 baseline | - | +40,717 | +3.9 | +0.0191 | +0.0116 | +0.0684 | +0.0745 |
 | B-LSK 相对 baseline | - | +118,471 | +0.1 | -0.0008 | -0.0065 | -0.0076 | -0.0032 |
 | B-PKI-Lite 相对 baseline | - | +42,050 | +0.2 | +0.0000 | +0.0011 | +0.0103 | +0.0151 |
@@ -72,8 +75,9 @@ A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、C-GRA-Lite、C-Chol-Lite、B-PKI-Lit
 | C-Chol-Lite 相对 baseline | - | +71,673 | +0.0 | -0.0011 | +0.0028 | +0.0136 | +0.0119 |
 | A+B-PKI-Lite 相对 baseline | - | +82,767 | +4.1 | +0.0271 | +0.0324 | +0.0812 | +0.0818 |
 | A+B-PKI-Lite+C-Plus 相对 baseline | - | +126,767 | +4.5 | +0.0244 | +0.0275 | +0.0692 | +0.0772 |
+| A+B-PKI-Lite+C-Chol-Lite 相对 baseline | - | +161,435 | +4.1 | +0.0274 | +0.0316 | +0.0628 | +0.0739 |
 
-轻量化对比：A-P2、B-PKI-Lite、C-Dynamic、C-Dynamic-Plus、C-GRA-Lite、C-Chol-Lite 相对 baseline 的参数增幅分别为 +1.53%、+1.58%、+0.73%、+1.46%、+2.09%、+2.70%；A+B-PKI-Lite 的评估摘要参数量为 2,740,390，相对 baseline 增加 82,767，增幅 +3.11%；A+B-PKI-Lite+C-Plus 的评估摘要参数量为 2,784,390，相对 baseline 增加 126,767，增幅 +4.77%。
+轻量化对比：A-P2、B-PKI-Lite、C-Dynamic、C-Dynamic-Plus、C-GRA-Lite、C-Chol-Lite 相对 baseline 的参数增幅分别为 +1.53%、+1.58%、+0.73%、+1.46%、+2.09%、+2.70%；A+B-PKI-Lite 的评估摘要参数量为 2,740,390，相对 baseline 增加 82,767，增幅 +3.11%；A+B-PKI-Lite+C-Plus 的评估摘要参数量为 2,784,390，相对 baseline 增加 126,767，增幅 +4.77%；A+B-PKI-Lite+C-Chol-Lite 的评估摘要参数量为 2,819,058，相对 baseline 增加 161,435，增幅 +6.07%。
 
 对应记录文件：
 
@@ -96,6 +100,8 @@ A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、C-GRA-Lite、C-Chol-Lite、B-PKI-Lit
 - `weights/experiments/dior/ab_p2_pki_lite/compare_with_baseline_a_b_pki_c_dior_test_2026-07-13.md`
 - `weights/experiments/dior/abc_p2_pki_geo_plus/eval_dior_test_2026-07-14.md`
 - `weights/experiments/dior/abc_p2_pki_geo_plus/compare_with_baseline_ab_cplus_dior_test_2026-07-14.md`
+- `weights/experiments/dior/abc_p2_pki_chol_lite/eval_dior_test_2026-07-16.md`
+- `weights/experiments/dior/abc_p2_pki_chol_lite/compare_with_baseline_ab_cplus_dior_test_2026-07-16.md`
 
 ## 跨数据集 Baseline 原则
 
@@ -110,6 +116,8 @@ weights/pretrained/yolo11n-obb.pt -> 第二数据集 baseline/A/B/C/AB/ABC
 ```
 
 除非论文明确做“跨数据集迁移学习”，否则不要把 DIOR-R 的 `best.pt` 用作第二数据集的初始化权重。
+
+UCAS-AOD 本地数据位于 `C:/E/datasets/UCAS-AOD-YOLO/`，服务器约定放在 `/home/ws/datasets/UCAS-AOD-YOLO/`。数据集与四组消融训练命令见 `experiments/ucas_aod/README.md`。
 
 ## 实验矩阵
 
@@ -143,6 +151,7 @@ ultralytics/cfg/models/11/remote_obb/
   yolo11n-obb-ab-p2-pki-lite.yaml
   yolo11n-obb-abc-p2-pki-geo-plus.yaml
   yolo11n-obb-abc-p2-pki-chol-lite.yaml
+  yolo11n-obb-abc-p2-pki-set-hbs.yaml
 
 ultralytics/nn/modules/
   remote_obb_blocks.py
@@ -238,7 +247,7 @@ python scripts/train_obb.py --config experiments/dior/c_chol_lite.yaml --env loc
 python scripts/train_obb.py --config experiments/dior/c_chol_lite_homews.yaml
 ```
 
-DIOR-R test 上 C-Chol-Lite 全尺度 mAP50-95 为 0.6902，小目标 mAP50-95 为 0.3589，已经超过 C-Dynamic-Plus，是当前最好的 C 单点。下一步建议训练 A+B-PKI-Lite+C-Chol-Lite：
+DIOR-R test 上 C-Chol-Lite 全尺度 mAP50-95 为 0.6902，小目标 mAP50-95 为 0.3589，已经超过 C-Dynamic-Plus，是当前最好的 C 单点。A+B-PKI-Lite+C-Chol-Lite 组合也已完成训练和评估：
 
 ```bash
 python scripts/train_obb.py --config experiments/dior/abc_p2_pki_chol_lite_homews.yaml
@@ -260,6 +269,41 @@ python scripts/train_obb.py --config experiments/dior/abc_p2_pki_geo_plus_homews
 
 当前 test 评估摘要参数量为 2,784,390，GFLOPs 为 11.1；全尺度 mAP50-95 为 0.7149，小目标 mAP50-95 为 0.4242。该结果明显高于 baseline，但低于 A+B-PKI-Lite，因此论文主结果候选仍建议使用 A+B-PKI-Lite，ABC 作为三创新点融合消融行保留。
 
+A+B-PKI-Lite+C-Chol-Lite 三创新点融合实验已完成训练和评估。该结构保留 A 的 P2/4 检测分支，B-PKI-Lite 仍只作用于原 top-down neck 的 P5->P4、P4->P3 融合块，C-Chol-Lite 在 OBB head 上新增训练时 Cholesky/SPD 协方差辅助分支；推理和评估时仍使用标准 OBB 输出。本地/服务器配置仍保留：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/abc_p2_pki_chol_lite.yaml --env local --dry-run
+python scripts/train_obb.py --config experiments/dior/abc_p2_pki_chol_lite_homews.yaml
+```
+
+本次实际训练为 AutoDL 双 RTX 3090 续训，训练期 best 出现在 epoch 100。当前 test 评估摘要参数量为 2,819,058，GFLOPs 为 10.7；全尺度 mAP50 为 0.8862，全尺度 mAP50-95 为 0.7190，小目标 mAP50-95 为 0.4209。该结果明显高于 baseline，且全尺度 mAP50 略高于 A+B-PKI-Lite，但 mAP50-95 和小目标指标仍低于 A+B-PKI-Lite，因此主结果候选仍建议使用 A+B-PKI-Lite，ABC-Chol 作为三创新点融合消融行保留。
+
+A+B-PKI-Lite+C-SET-HBS 是下一组优先 ABC 实验，参考 CVPR 2025 SET 的 HBS 思路，但只实现贡献最大且训练稳定的 HBS 部分，不声称复现完整 SET。C 根据旋转 GT 生成前景掩码，保留前景特征，只对背景做尺度相关平滑，并通过共享 OBB head 形成训练辅助监督；验证和推理仍完全使用原 AB 主路径。论文和实现说明见 `research/top_conference/set_2025/`。
+
+为了保证最终消融表中 C 与 ABC 使用同一个创新点，单独 C-SET-HBS 配置也已准备：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/c_set_hbs.yaml --env local
+python scripts/train_obb.py --config experiments/dior/c_set_hbs_homews.yaml
+```
+
+单独 C 可以在 ABC 超过 AB 后再补训；若按标准消融顺序，也可以先训练 C 再训练 ABC。
+
+本地检查与训练：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/abc_p2_pki_set_hbs.yaml --env local --dry-run
+python scripts/train_obb.py --config experiments/dior/abc_p2_pki_set_hbs.yaml --env local
+```
+
+`/home/ws` 一键训练使用约定的 `batch=-1` 和 `cache=ram`：
+
+```bash
+python scripts/train_obb.py --config experiments/dior/abc_p2_pki_set_hbs_homews.yaml
+```
+
+DIOR `nc=20` 构建参数求和为 2,797,774，其中 HBS 只比 AB 增加 49,368；按现有 Ultralytics 评估摘要口径预计约为 2,789,758，相对 baseline 约增加 4.97%。HBS 不参与推理，因此推理 GFLOPs 和输出协议与 AB 相同。已通过本地/服务器 dry-run、297/793 项预训练权重迁移、训练态 5 项 loss、反向梯度和 eval 输出检查。
+
 ## 验证脚本
 
 统一使用：
@@ -276,6 +320,7 @@ python scripts/evaluate_obb.py --model weights/experiments/dior/a_p2/best.pt --d
 python scripts/evaluate_obb.py --model weights/experiments/dior/b_pki_lite/best.pt --data DIOR.yaml --split test --mode both
 python scripts/evaluate_obb.py --model weights/experiments/dior/c_dynamic/best.pt --data DIOR.yaml --split test --mode both
 python scripts/evaluate_obb.py --model weights/experiments/dior/abc_p2_pki_geo_plus/best.pt --data DIOR.yaml --split test --mode both
+python scripts/evaluate_obb.py --model weights/experiments/dior/abc_p2_pki_chol_lite/best.pt --data DIOR.yaml --split test --mode both
 python scripts/evaluate_obb.py --model path/to/best.pt --data DOTAv1.yaml --split test --mode all
 python scripts/evaluate_obb.py --model path/to/best.pt --data DIOR.yaml --mode small
 ```

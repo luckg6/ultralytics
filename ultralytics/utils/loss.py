@@ -966,7 +966,10 @@ class v8OBBLoss(v8DetectionLoss):
     def __init__(self, model, tal_topk=10, tal_topk2: int | None = None):
         """Initialize v8OBBLoss with model, assigner, and rotated bbox loss; model must be de-paralleled."""
         super().__init__(model, tal_topk=tal_topk)
-        self.use_chol_aux = model.model[-1].__class__.__name__ == "OBBCholesky"
+        head = model.model[-1]
+        self.use_chol_aux = head.__class__.__name__ == "OBBCholesky"
+        self.use_set_aux = head.__class__.__name__ == "OBBSETHBS"
+        self.set_head = head if self.use_set_aux else None
         self.assigner = RotatedTaskAlignedAssigner(
             topk=tal_topk,
             num_classes=self.nc,
@@ -996,9 +999,26 @@ class v8OBBLoss(v8DetectionLoss):
 
     def loss(self, preds: dict[str, torch.Tensor], batch: dict[str, torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
         """Calculate and return the loss for oriented bounding box detection."""
+        set_feats = preds.get("set_feats")
+        if set_feats is not None:
+            main_preds = {key: value for key, value in preds.items() if key != "set_feats"}
+            main_loss, main_items = self.loss(main_preds, batch)
+            foreground_masks = self.build_rotated_foreground_masks(batch, set_feats)
+            aux_preds = self.set_head.auxiliary_forward(set_feats, foreground_masks)
+            aux_loss, aux_items = self.loss(aux_preds, batch)
+            gain = float(
+                self.hyp.get("set_hbs", 1.0)
+                if isinstance(self.hyp, dict)
+                else getattr(self.hyp, "set_hbs", 1.0)
+            )
+            return (
+                torch.cat((main_loss[:4], (gain * aux_loss[:4].sum()).unsqueeze(0))),
+                torch.cat((main_items[:4], (gain * aux_items[:4].sum()).unsqueeze(0))),
+            )
+
         pred_chol = preds.get("chol")
         use_chol = pred_chol is not None
-        loss = torch.zeros(5 if self.use_chol_aux else 4, device=self.device)  # box, cls, dfl, angle, optional chol
+        loss = torch.zeros(5 if (self.use_chol_aux or self.use_set_aux) else 4, device=self.device)
         pred_distri, pred_scores, pred_angle = (
             preds["boxes"].permute(0, 2, 1).contiguous(),
             preds["scores"].permute(0, 2, 1).contiguous(),
@@ -1086,6 +1106,48 @@ class v8OBBLoss(v8DetectionLoss):
             loss[4] *= getattr(self.hyp, "chol", 0.2)  # Cholesky/SPD auxiliary gain
 
         return loss * batch_size, loss.detach()  # loss(box, cls, dfl, angle, optional chol)
+
+    @torch.no_grad()
+    def build_rotated_foreground_masks(
+        self, batch: dict[str, torch.Tensor], feats: list[torch.Tensor], chunk_size: int = 64
+    ) -> list[torch.Tensor]:
+        """Rasterize normalized rotated GT boxes into foreground masks for each pyramid level."""
+        batch_idx = batch["batch_idx"].view(-1).long()
+        boxes = batch["bboxes"].view(-1, 5)
+        batch_size = feats[0].shape[0]
+        masks = []
+
+        for feat in feats:
+            _, _, height, width = feat.shape
+            mask = torch.zeros((batch_size, 1, height, width), device=feat.device, dtype=feat.dtype)
+            grid_y = (torch.arange(height, device=feat.device, dtype=boxes.dtype) + 0.5) / height
+            grid_x = (torch.arange(width, device=feat.device, dtype=boxes.dtype) + 0.5) / width
+            yy, xx = torch.meshgrid(grid_y, grid_x, indexing="ij")
+
+            for image_idx in range(batch_size):
+                image_boxes = boxes[batch_idx == image_idx]
+                if not image_boxes.numel():
+                    continue
+                image_mask = torch.zeros((height, width), device=feat.device, dtype=torch.bool)
+                for box_chunk in image_boxes.split(chunk_size):
+                    cx, cy, box_w, box_h, angle = box_chunk.unbind(-1)
+                    dx = xx.unsqueeze(0) - cx[:, None, None]
+                    dy = yy.unsqueeze(0) - cy[:, None, None]
+                    cos, sin = angle.cos()[:, None, None], angle.sin()[:, None, None]
+                    local_x = dx * cos + dy * sin
+                    local_y = -dx * sin + dy * cos
+                    inside = (local_x.abs() <= box_w[:, None, None] * 0.5) & (
+                        local_y.abs() <= box_h[:, None, None] * 0.5
+                    )
+                    image_mask |= inside.any(dim=0)
+                center_x = (image_boxes[:, 0] * width).long().clamp_(0, width - 1)
+                center_y = (image_boxes[:, 1] * height).long().clamp_(0, height - 1)
+                image_mask[center_y, center_x] = True
+                mask[image_idx, 0] = image_mask.to(mask.dtype)
+
+            # Preserve one neighboring feature cell around object boundaries and sub-cell tiny boxes.
+            masks.append(F.max_pool2d(mask, kernel_size=3, stride=1, padding=1))
+        return masks
 
     def bbox_decode(
         self, anchor_points: torch.Tensor, pred_dist: torch.Tensor, pred_angle: torch.Tensor

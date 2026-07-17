@@ -23,6 +23,7 @@ from .utils import bias_init_with_prob, linear_init
 __all__ = (
     "OBB",
     "OBBCholesky",
+    "OBBSETHBS",
     "Classify",
     "Detect",
     "Pose",
@@ -519,6 +520,67 @@ class OBB(Detect):
     def fuse(self) -> None:
         """Remove the one2many head for inference optimization."""
         self.cv2 = self.cv3 = self.cv4 = None
+
+
+class _HBSAdapter(nn.Module):
+    """Background smoothing adapter inspired by SET HBS (CVPR 2025)."""
+
+    def __init__(self, channels: int, reduction: int, kernel_size: int):
+        """Build a lightweight reduce-smooth-expand path for one pyramid level."""
+        super().__init__()
+        hidden = max(channels // reduction, 8)
+        self.reduce = nn.Sequential(nn.Conv2d(channels, hidden, 1, bias=False), nn.BatchNorm2d(hidden), nn.ReLU())
+        self.smooth = nn.Sequential(
+            nn.Conv2d(hidden, hidden, kernel_size, padding=kernel_size // 2, groups=hidden, bias=False),
+            nn.BatchNorm2d(hidden),
+            nn.ReLU(),
+        )
+        self.expand = nn.Sequential(nn.Conv2d(hidden, channels, 1, bias=False), nn.BatchNorm2d(channels), nn.ReLU())
+
+    def forward(self, x: torch.Tensor, foreground_mask: torch.Tensor) -> torch.Tensor:
+        """Keep foreground features intact while smoothing the masked background."""
+        background = x * (1.0 - foreground_mask)
+        smoothed_background = background + self.expand(self.smooth(self.reduce(background)))
+        return x * foreground_mask + smoothed_background * (1.0 - foreground_mask)
+
+
+class OBBSETHBS(OBB):
+    """OBB head with a training-only SET-style hierarchical background smoothing branch.
+
+    The regular OBB path is unchanged. During training, the loss builds foreground masks
+    from rotated GT boxes and runs the HBS-enhanced features through the shared OBB head
+    for auxiliary supervision. The adapters are not executed during validation or inference.
+    """
+
+    def __init__(
+        self, nc: int = 80, ne: int = 1, reduction: int = 4, reg_max=16, end2end=False, ch: tuple = ()
+    ):
+        """Initialize the standard OBB head and scale-aware HBS adapters."""
+        super().__init__(nc, ne, reg_max, end2end, ch)
+        level_strides = [32 // (2 ** (len(ch) - 1 - i)) for i in range(len(ch))]
+        kernels = [math.ceil(math.log2(stride) / 2) * 2 + 1 for stride in level_strides]
+        self.hbs = nn.ModuleList(_HBSAdapter(c, reduction, kernel) for c, kernel in zip(ch, kernels))
+
+    def forward(
+        self, x: list[torch.Tensor]
+    ) -> dict[str, torch.Tensor] | torch.Tensor | tuple[torch.Tensor, dict[str, torch.Tensor]]:
+        """Return standard predictions and retain pyramid features only for the training auxiliary path."""
+        preds = super().forward(x)
+        if self.training:
+            preds["set_feats"] = x
+        return preds
+
+    def auxiliary_forward(
+        self, x: list[torch.Tensor], foreground_masks: list[torch.Tensor]
+    ) -> dict[str, torch.Tensor]:
+        """Run HBS-enhanced features through the shared OBB predictors."""
+        enhanced = [adapter(feat, mask) for adapter, feat, mask in zip(self.hbs, x, foreground_masks)]
+        return super().forward_head(enhanced, **self.one2many)
+
+    def fuse(self) -> None:
+        """Remove all prediction and training-only adapter modules for fused inference."""
+        super().fuse()
+        self.hbs = None
 
 
 class OBBCholesky(OBB):

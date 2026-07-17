@@ -21,6 +21,7 @@
 | `freqfusion_2024/` | FreqFusion | TPAMI 2024 | 频率感知 neck 特征融合 | 高 |
 | `fdconv_2025/` | FDConv | CVPR 2025 | 频域动态卷积 | 中 |
 | `gaucho_2025/` | GauCho | CVPR 2025 | OBB 回归表示/角度边界问题 | 中 |
+| `set_2025/` | SET / HBS | CVPR 2025 | 小目标背景高频抑制，已落地为 C-SET-HBS | 高 |
 | `canconv_2024/` | CANConv | CVPR 2024 | 遥感内容自适应非局部卷积 | 中 |
 | `yolov10_2024/` | YOLOv10 | NeurIPS 2024 | 轻量检测器效率/训练分配参考 | 低 |
 
@@ -28,9 +29,9 @@
 
 1. A-P2 已经验证有效，保留为当前最强单点改进。
 2. B-LSK 当前无效，新版 B-PKI-Lite 已替代旧 B，并在 A+B 融合中取得当前最佳结果。
-3. C-Dynamic 和 C-Dynamic-Plus 均为轻微正向，A+B+C-Plus 未超过 A+B-PKI-Lite；新版 C-GRA-Lite 已按 GRA 的 group-wise rotating 思想做轻量适配，下一步优先训练单独 C-GRA-Lite。
-4. 如果 C-GRA-Lite 单点明显优于 C-Dynamic-Plus，再训练 A+B-PKI-Lite+C-GRA-Lite；GauCho 涉及 OBB 回归表示/loss，作为后续高风险扩展，不优先动主线。
-5. FDConv 和 YOLOv10 更适合作为后续效率/训练策略备选，不建议在当前论文主线里一次性改太多。
+3. C-GRA-Lite、C-Chol-Lite 和两组旧 ABC 均已完成，但没有让 ABC 超过 A+B-PKI-Lite。
+4. 当前优先训练 A+B-PKI-Lite+C-SET-HBS：参考 CVPR 2025 SET 的 HBS，以训练期背景平滑辅助监督改善小目标和全尺度检测，推理保持 AB。
+5. FDConv、GauCho 完整 head 和 YOLOv10 继续作为备选，不在同一轮叠加。
 
 ## 外部源码放置约定
 

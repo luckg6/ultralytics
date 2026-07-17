@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from ultralytics.models import yolo
-from ultralytics.nn.modules import OBBCholesky
+from ultralytics.nn.modules import OBBCholesky, OBBSETHBS
 from ultralytics.nn.tasks import OBBModel
 from ultralytics.utils import DEFAULT_CFG, RANK
 from ultralytics.utils.torch_utils import unwrap_model
@@ -79,6 +79,8 @@ class OBBTrainer(yolo.detect.DetectionTrainer):
         self.loss_names = (
             ("box_loss", "cls_loss", "dfl_loss", "angle_loss", "chol_loss")
             if isinstance(model.model[-1], OBBCholesky)
+            else ("box_loss", "cls_loss", "dfl_loss", "angle_loss", "set_loss")
+            if isinstance(model.model[-1], OBBSETHBS)
             else ("box_loss", "cls_loss", "dfl_loss", "angle_loss")
         )
         return yolo.obb.OBBValidator(

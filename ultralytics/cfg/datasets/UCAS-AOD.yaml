@@ -1,0 +1,11 @@
+# UCAS-AOD in Ultralytics YOLO-OBB format for the local Windows workstation.
+path: C:/E/datasets/UCAS-AOD-YOLO
+
+train: images/train
+val: images/val
+test: images/test
+
+nc: 2
+names:
+  0: car
+  1: airplane

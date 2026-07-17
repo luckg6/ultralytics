@@ -1,0 +1,17 @@
+status: ready
+variant: A
+description: A-P2 on UCAS-AOD for the /home/ws server.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-a-p2.yaml
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: ultralytics/cfg/datasets/UCAS-AOD-homews.yaml
+name: ucas_aod_A_p2
+epochs: 100
+batch: -1
+imgsz: 640
+seed: 42
+device: 1
+workers: 8
+cache: ram
+cos_lr: true
+amp: true
+deterministic: true

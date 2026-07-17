@@ -11,6 +11,8 @@
 - A+B-PKI-Lite+C-Plus 已完成训练和评估，明显高于 baseline，但低于 A+B-PKI-Lite，说明当前三创新点简单叠加没有超过最佳双创新点组合。
 - C-GRA-Lite 已完成训练和评估，参考 ECCV 2024 GRA 的 group-wise rotating / attention 思想，用标准 PyTorch 的方向掩码 depthwise 分支做轻量适配；小目标略高于 baseline，但全尺度 mAP50-95 和小目标 mAP50-95 均弱于 C-Dynamic-Plus。
 - C-Chol-Lite 已完成训练和评估，明确避开 YOLO11 已有的 ProbIoU/Gaussian covariance/周期角度 loss，新增训练时 Cholesky/SPD 协方差辅助 head；全尺度 mAP50-95 为 0.6902，小目标 mAP50-95 为 0.3589，是当前最佳 C 单点。
+- A+B-PKI-Lite+C-Chol-Lite 已完成训练和评估，全尺度 mAP50 为 0.8862，略高于 A+B-PKI-Lite，但全尺度 mAP50-95 为 0.7190、小目标 mAP50-95 为 0.4209，仍低于 A+B-PKI-Lite。
+- A+B-PKI-Lite+C-SET-HBS 已完成代码和配置，参考 CVPR 2025 SET 中贡献最大的 HBS；训练期用旋转 GT 掩码保护前景、平滑背景并增加共享 OBB head 辅助监督，推理保持 AB，当前为下一组优先 ABC。
 
 ## 已完成：A+B-PKI-Lite 融合
 
@@ -99,7 +101,8 @@
 - 动机：GauCho 启发 OBB 几何表征方向，但本仓库 YOLO11-OBB 已经有 ProbIoU、Gaussian covariance 相似度和周期角度 loss，所以不能再做普通 Gaussian loss。C-Chol-Lite 改为训练时额外预测 Cholesky/SPD 协方差参数，推理时仍使用原 YOLO11 OBB decode/NMS。
 - 检查状态：本地和 `/home/ws` dry-run 通过；C-Chol-Lite 从预训练权重可迁移 490/583 项，构建检查参数量为 2,767,516；ABC-Chol-Lite 从预训练权重可迁移 297/777 项，构建检查参数量为 2,897,906；训练态 5 项 loss 和 eval 态无 `chol` 输出均正常。
 - 当前状态：已完成训练和 test 评估。全尺度 mAP50-95 为 0.6902，小目标 mAP50-95 为 0.3589；相对 baseline 分别提升 +0.0028 和 +0.0119；相对 C-Dynamic-Plus 分别提升 +0.0006 和 +0.0048。
-- 结论：C-Chol-Lite 是当前最佳 C 单点，下一步建议训练 ABC-Chol-Lite，验证它是否比 A+B-PKI-Lite+C-Plus 更适合与 A/B 叠加。
+- ABC 组合结果：A+B-PKI-Lite+C-Chol-Lite 已完成训练和 test 评估。全尺度 mAP50-95 为 0.7190，小目标 mAP50-95 为 0.4209；相对 baseline 分别提升 +0.0316 和 +0.0739；相对 A+B-PKI-Lite 分别下降 -0.0008 和 -0.0079；相对 A+B-PKI-Lite+C-Plus 全尺度 mAP50-95 提升 +0.0041，但小目标 mAP50-95 下降 -0.0033。
+- 结论：C-Chol-Lite 是当前最佳 C 单点，但叠加到 A+B 后没有超过 A+B-PKI-Lite；ABC-Chol-Lite 可作为三创新点融合消融或补充结果。
 
 ## 暂不优先
 
@@ -107,11 +110,24 @@
 - `FDConv`：CVPR 2025 新，但频域动态卷积可能重，先作为备选。
 - `YOLOv10`：适合作效率和训练策略参考，不适合作 A/B/C 主创新点。
 
+## 待训练：A+B-PKI-Lite+C-SET-HBS
+
+- 实验名：`dior_ABC_p2_pki_set_hbs`
+- 本地配置：`experiments/dior/abc_p2_pki_set_hbs.yaml`，`batch=4`、`cache=disk`
+- `/home/ws` 配置：`experiments/dior/abc_p2_pki_set_hbs_homews.yaml`，`batch=-1`、`cache=ram`
+- 单独 C 配置：`experiments/dior/c_set_hbs.yaml` 和 `experiments/dior/c_set_hbs_homews.yaml`，供正式消融表使用
+- 模型：`ultralytics/cfg/models/11/remote_obb/yolo11n-obb-abc-p2-pki-set-hbs.yaml`
+- 参考目录：`research/top_conference/set_2025/`
+- 设计边界：A 仍是 P2 检测尺度，B 仍是 top-down neck 的 PKI 融合，C 只做训练时 head 辅助监督，不修改 neck、OBB decode、NMS 或评估协议。
+- 轻量性：DIOR `nc=20` 构建参数求和 2,797,774，HBS 比 AB 增加 49,368；整体相对 baseline 构建参数约 +4.97%，推理路径和 AB 相同。
+- 检查状态：本地和 `/home/ws` dry-run 通过；从官方预训练权重迁移 297/793 项；训练态 `set_loss`、反向梯度、eval 输出均正常。
+- 预期：SET 在 DOTA-v2.0、AI-TOD、VisDrone 和 COCO 上同时改善总体与小目标指标，HBS 单项是论文消融中最主要的收益来源，因此比继续加重方向注意力更有机会与 AB 正向互补；最终是否超过 AB 必须以本次 DIOR-R test 为准。
+
 ## 当前建议路线
 
 ```text
-短期：围绕 A+B-PKI-Lite 补第二数据集和论文表格
-补充：A+B+C-Plus 已完成但低于 A+B-PKI-Lite；C-GRA-Lite 已完成但弱于 C-Plus；C-Chol-Lite 已完成且为当前最佳 C 单点，建议训练 ABC-Chol-Lite
-备选：B-FreqFuse -> 其他非重复 YOLO11 OBB loss/head 方向
+短期：训练 A+B-PKI-Lite+C-SET-HBS，直接检验能否同时超过 AB 的全尺度和小目标指标
+补充：A+B+C-Plus 和 A+B+C-Chol-Lite 均已完成但未超过 A+B-PKI-Lite；C-GRA-Lite 已完成但弱于 C-Plus；C-Chol-Lite 是当前最佳已完成 C 单点
+备选：如果 SET-HBS 仍未超过 AB，再考虑完整 SET 的 API 或其他非重复 YOLO11 OBB 训练监督方向
 论文扩展：Cholesky/SPD auxiliary head 或 GauCho-style 表征讨论，但不要重复 YOLO11 已有 ProbIoU/Gaussian covariance
 ```
