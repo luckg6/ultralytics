@@ -553,12 +553,17 @@ baseline/A/B/C/AB/ABC 也都从 weights/pretrained/yolo11n-obb.pt 起训
 - 解耦版保留 A-P2-Plus 0-28 层主路，B 另建独立 PKI top-down 路径，通过零初始化 `ResidualFeatureBlend` 只在最终 P3/P4 注入，不改变 P2SemanticGuard 的输入。
 - AB-Plus-Decoupled 在 VEDAI `nc=9` 下构建参数量 2,989,559，14.8 GFLOPs，相对 baseline 参数增加 326,297（约 `+12.25%`）。
 - 解耦版 fold10 test 结果为全尺度 0.7336/0.5487、小目标 0.6768/0.5222，数值顺序为 mAP50/mAP50-95。相对串联 AB-Plus 四项回升 `+0.0474/+0.0224/+0.0267/+0.0267`，但除全尺度 mAP50 外仍未超过 baseline。
-- 解耦版的 P3/P4 融合幅度均约 1.2%，但 P2Guard 抑制仍比单独 A-Plus 弱。若继续，下一步应从 A-P2-Plus `best.pt` 阶段初始化并保护主路，只学习 B 残差。
+- 解耦版的 P3/P4 融合幅度均约 1.2%，但 P2Guard 抑制仍比单独 A-Plus 弱。该现象只能指导后续结构设计；主消融严禁从 A-P2-Plus `best.pt` 初始化、冻结 A 主路或只学习 B 残差。
 - 解耦版权重位于 `weights/experiments/vedai/ab_p2_plus_pki_decoupled/best.pt`，日志位于 `experiments/logs/vedai/ab_p2_plus_pki_decoupled/`。
-- VEDAI AB-PKI-Heavy 已 ready：模型为 `ultralytics/cfg/models/11/remote_obb/yolo11n-obb-ab-p2-plus-pki-heavy.yaml`，本地配置为 `experiments/vedai/ab_p2_plus_pki_heavy.yaml`，`/home/ws` 配置为 `experiments/vedai/ab_p2_plus_pki_heavy_homews_batch32.yaml`。
+- VEDAI AB-PKI-Heavy 已完成训练和评估：模型为 `ultralytics/cfg/models/11/remote_obb/yolo11n-obb-ab-p2-plus-pki-heavy.yaml`，本地配置为 `experiments/vedai/ab_p2_plus_pki_heavy.yaml`，`/home/ws` 配置为 `experiments/vedai/ab_p2_plus_pki_heavy_homews_batch32.yaml`。
 - Heavy 版是单路 neck：P2Guard 之前保持普通融合，P2 实际通道提高到 64；B 的 `C3k2PKI` 放在 P2 之后的最终 P3/P4 融合，实际通道为 96/160，P2/P3/P4 融合有效重复数均为 2。
 - Heavy 版在 VEDAI `nc=9` 下构建参数量 3,580,431，20.2 GFLOPs，相对 baseline 参数增加 917,169（约 `+34.44%`），但绝对规模仍只有约 3.6M，论文中必须明确标记为 Heavy。
-- Heavy 版已通过本地和 `/home/ws` dry-run、预训练迁移 297/790 项、dummy forward `(1, 14, 34000)`、四层 stride 4/8/16/32 与 P2Guard/PKI 反向梯度检查，当前待训练。
+- Heavy 版 fold10 test 结果为全尺度 0.7334/0.5431、小目标 0.6775/0.5208，数值顺序为 mAP50/mAP50-95；相对 baseline 为 `+0.0034/-0.0230/-0.0056/-0.0085`。
+- Heavy 版相对解耦版四项为 `-0.0002/-0.0056/+0.0007/-0.0014`，增加约 59 万参数没有产生收益；继续简单加宽加深不再是推荐方向。
+- Heavy 版权重位于 `weights/experiments/vedai/ab_p2_plus_pki_heavy/best.pt`，日志位于 `experiments/logs/vedai/ab_p2_plus_pki_heavy/`。
+- VEDAI 主消融硬规则：baseline、A、B、AB 必须全部从 `weights/pretrained/yolo11n-obb.pt` 独立起训，同一数据集内使用相同 split、batch、epochs、imgsz、seed、训练超参和评估协议。
+- AB 只能体现 A+B 结构组合，不得从 A/B 数据集微调权重续训，不得冻结 A 后单独训练 B，不得增加独有阶段、修改 seed/batch/epochs 或改变评估协议。
+- 已复核 `experiments/vedai/*.yaml`，所有现有配置均使用 `weights/pretrained/yolo11n-obb.pt`；当前不存在不公平的阶段式配置。串联、解耦和 Heavy 负向结果保留为探索记录，不作为主表增益证据。
 - 最终论文表格建议统一使用同一个 split，例如都用 `split='test'`，确保所有模型公平比较。
 - `cache='disk'` 会在 images 文件夹下生成 `.npy` 缓存文件，统计原始图片数量时不要把 `.npy` 算进去。
 

@@ -1,5 +1,29 @@
 # VEDAI-1024 轻量筛选实验
 
+## 原版 A/B/AB 的 imgsz=512 统一复核
+
+为保持与 DIOR-R 完全相同的模型结构，同时不重跑已经完成的 DIOR-R 实验，VEDAI 新增一组统一 `imgsz=512` 的四行复核。四组分别使用原版 baseline、A-P2、B-PKI-Lite 和 A+B-PKI-Lite YAML；它们都从 `weights/pretrained/yolo11n-obb.pt` 独立起训，除模型结构外训练设置完全一致。已有 `imgsz=640` 结果和探索版 A-Plus/AB-Plus 全部保留，不覆盖。
+
+`/home/ws` 服务器训练统一使用 `batch=32`、`device=1`、`cache=ram`：
+
+```bash
+python scripts/train_obb.py --config experiments/vedai/baseline_homews_batch32_img512.yaml
+python scripts/train_obb.py --config experiments/vedai/a_p2_homews_batch32_img512.yaml
+python scripts/train_obb.py --config experiments/vedai/b_pki_lite_homews_batch32_img512.yaml
+python scripts/train_obb.py --config experiments/vedai/ab_p2_pki_lite_homews_batch32_img512.yaml
+```
+
+训练完成后统一评估 fold10 test：
+
+```bash
+python scripts/evaluate_obb.py --model runs/obb/vedai_f10_512_baseline_yolo11n_obb/weights/best.pt --data VEDAI-1024-homews.yaml --split test --mode both --imgsz 512
+python scripts/evaluate_obb.py --model runs/obb/vedai_f10_512_A_p2/weights/best.pt --data VEDAI-1024-homews.yaml --split test --mode both --imgsz 512
+python scripts/evaluate_obb.py --model runs/obb/vedai_f10_512_B_pki_lite/weights/best.pt --data VEDAI-1024-homews.yaml --split test --mode both --imgsz 512
+python scripts/evaluate_obb.py --model runs/obb/vedai_f10_512_AB_p2_pki_lite/weights/best.pt --data VEDAI-1024-homews.yaml --split test --mode both --imgsz 512
+```
+
+本地备用配置为 `baseline_img512.yaml`、`a_p2_img512.yaml`、`b_pki_lite_img512.yaml` 和 `ab_p2_pki_lite_img512.yaml`，统一 `batch=4`、`device=0`、`cache=disk`。该复核是公平的输入尺度假设验证，不预设 A 或 AB 必然提升；论文只按最终实测结果报告。小目标评估仍按模型输入空间 `w*h<1024` 判定，因此 512 四组之间可以公平横向比较，但不要把其小目标数量口径与 640 实验直接混合比较。
+
 VEDAI-1024 用于筛选 A-P2、B-PKI-Lite 和 A+B-PKI-Lite 在真实微小、多方向车辆场景中的跨数据集效果。
 
 ## 数据转换
@@ -29,6 +53,18 @@ python scripts/convert_vedai_to_yolo_obb.py
 | test | 10 | 121 | 369 | 353 |
 
 Ultralytics 原生 `YOLODataset(task='obb')` 已完整扫描，0 损坏标签。完整转换统计位于 `C:/E/datasets/VEDAI-1024-YOLO/conversion_report.json`。
+
+## 主消融公平性硬规则
+
+VEDAI 服务于 DIOR-R + VEDAI 两数据集的 baseline/A/B/AB 主消融。主表候选必须同时满足：
+
+- baseline、A、B、AB 全部从 `weights/pretrained/yolo11n-obb.pt` 独立起训。
+- 同一数据集内统一 split、epochs、batch、imgsz、seed、数据增强、优化器和评估协议。
+- AB 只能通过结构同时包含 A 和 B，不能从 A/B 数据集微调权重续训，不能冻结 A 后只训 B，不能多一个训练阶段或享有独有训练资源。
+- 不允许为了让 AB 超过单点而只改 AB 的 seed、batch、训练轮数或评估设置。
+- 主结论只能来自同一公平协议下的结构消融。负向串联、解耦和 Heavy 结果保留为探索记录，不写成主方法增益。
+
+当前 `experiments/vedai/*.yaml` 已检查，所有现有配置的 `pretrained` 均为 `weights/pretrained/yolo11n-obb.pt`，不存在从 A/B `best.pt` 续训的配置。
 
 ## `/home/ws` 固定 batch=32 筛选
 
@@ -213,11 +249,11 @@ python scripts/evaluate_obb.py --model runs/obb/vedai_f10_AB_p2_plus_pki_decoupl
 
 解耦版相对串联版四项回升 `+0.0474/+0.0224/+0.0267/+0.0267`，且全尺度 mAP50 比 baseline 高 `0.0036`，证明解耦有效。但其余三项仍比 baseline 低 `0.0174/0.0063/0.0071`，因此还不能作为成功 AB 结果。
 
-训练后两个融合门的平均幅度只有约 1.2%，但 P2Guard 抑制强度仍比单独 A-Plus 弱。后续若继续，应用已训练 A-P2-Plus 权重初始化并保护主路，只训练 B 辅助路径和残差门，不再从通用预训练权重联合重训全模型。
+训练后两个融合门的平均幅度只有约 1.2%，但 P2Guard 抑制强度仍比单独 A-Plus 弱。该现象只用于指导后续公平的结构设计；不允许改用 A-P2-Plus `best.pt` 初始化、冻结主路或只训练 B 残差，因为这会破坏主消融公平性。
 
 权重已归档至 `weights/experiments/vedai/ab_p2_plus_pki_decoupled/best.pt`，日志已整理至 `experiments/logs/vedai/ab_p2_plus_pki_decoupled/`。
 
-## 待训练 AB-PKI-Heavy
+## AB-PKI-Heavy 实验
 
 AB-PKI-Heavy 不使用双路、残差门或阶段式初始化，仍从与其他消融相同的 `yolo11n-obb.pt` 独立起训。结构是单路径加宽加深：
 
@@ -254,3 +290,17 @@ python scripts/evaluate_obb.py --model runs/obb/vedai_f10_AB_p2_plus_pki_heavy/w
 ```
 
 成功标准不变：全尺度超过 B 的 `0.7482/0.5756`，同时小目标超过 A-P2-Plus 的 `0.7054/0.5444`。
+
+Heavy 版已使用固定 `batch=32` 配置训练完成，未达到成功标准：
+
+| 模型 | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
+|---|---:|---:|---:|---:|
+| baseline | 0.7300 | 0.5661 | 0.6831 | 0.5293 |
+| B-PKI-Lite | **0.7482** | **0.5756** | 0.7014 | 0.5365 |
+| A-P2-Plus | 0.7310 | 0.5507 | **0.7054** | **0.5444** |
+| AB-Plus-Decoupled | 0.7336 | 0.5487 | 0.6768 | 0.5222 |
+| AB-PKI-Heavy | 0.7334 | 0.5431 | 0.6775 | 0.5208 |
+
+Heavy 版相对 baseline 四项变化为 `+0.0034/-0.0230/-0.0056/-0.0085`；相对解耦版为 `-0.0002/-0.0056/+0.0007/-0.0014`。增加约 59 万参数没有产生精度收益。其全尺度 P/R 为 `0.640/0.704`，容量增加主要提高了召回，同时带来更多误检。
+
+权重已归档至 `weights/experiments/vedai/ab_p2_plus_pki_heavy/best.pt`，日志已整理至 `experiments/logs/vedai/ab_p2_plus_pki_heavy/`。

@@ -159,8 +159,9 @@ weights/*
 !weights/README.md
 !weights/**/
 *.pt
-!weights/*.pt
-!weights/**/*.pt
+*.pth
+*.ckpt
+*.safetensors
 *.weights
 *.ts
 *.pb

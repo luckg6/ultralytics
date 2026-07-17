@@ -1,0 +1,17 @@
+status: ready
+variant: baseline_img512
+description: YOLO11n-OBB baseline at imgsz 512 on the fixed VEDAI-1024 fold10 split.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-baseline.yaml
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: ultralytics/cfg/datasets/VEDAI-1024.yaml
+name: vedai_f10_512_baseline_yolo11n_obb
+epochs: 100
+batch: 4
+imgsz: 512
+seed: 42
+device: 0
+workers: 4
+cache: disk
+cos_lr: true
+amp: true
+deterministic: true

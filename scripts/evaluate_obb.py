@@ -27,6 +27,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--data", default="DIOR.yaml", help="Dataset YAML, for example DIOR.yaml or DOTAv1.yaml.")
     parser.add_argument("--split", default="test", help="Dataset split to evaluate: val or test.")
+    parser.add_argument("--imgsz", type=int, default=640, help="Evaluation image size; keep it equal to training imgsz.")
     parser.add_argument("--device", default="0", help="Device passed to Ultralytics, for example 0 or cpu.")
     parser.add_argument("--workers", type=int, default=0, help="Number of dataloader workers.")
     parser.add_argument(
@@ -46,7 +47,7 @@ def run_eval(model, args: argparse.Namespace, small_only: bool):
     print(f"Evaluating {Path(args.model)} on {args.data} [{args.split}], {label}")
     print("=" * 60)
 
-    return model.val(data=args.data, split=args.split, device=args.device, workers=args.workers)
+    return model.val(data=args.data, split=args.split, imgsz=args.imgsz, device=args.device, workers=args.workers)
 
 
 def print_metrics(name: str, metrics) -> None:

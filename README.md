@@ -131,7 +131,9 @@ VEDAI AB-Plus 已完成训练和评估。它使用 A-Plus 的 P2 语义守门，
 
 针对串联干扰新增的 VEDAI AB-Plus-Decoupled 已完成训练和评估。它完整保留 A-P2-Plus 主路，B-PKI-Lite 使用独立 top-down 辅助路径，并通过零初始化逐通道残差门只在最终 P3/P4 特征注入。fold10 test 四项为 0.7336/0.5487/0.6768/0.5222，比串联 AB-Plus 明显恢复，但只有全尺度 mAP50 超过 baseline，尚未达到 AB 成功标准。
 
-为进一步优先追求 VEDAI 精度，已新增结构更直接的 AB-PKI-Heavy：使用单路径，P2Guard 之前保持普通融合，将 B-PKI 后移到最终 P3/P4 层，并同时增加 P2/P3/P4 通道和深度。构建参数量 3,580,431，20.2 GFLOPs，本地与 `/home/ws` 固定 `batch=32` 配置已 ready。
+结构更直接的 VEDAI AB-PKI-Heavy 也已完成训练和评估。它使用单路径，P2Guard 之前保持普通融合，将 B-PKI 后移到最终 P3/P4 层，并同时增加 P2/P3/P4 通道和深度。fold10 test 四项为 0.7334/0.5431/0.6775/0.5208，与解耦版接近但未更好，说明继续简单增加容量不能解决 VEDAI 上的 AB 组合问题。
+
+VEDAI 主消融继续遵守与 DIOR-R 相同的公平协议：baseline、A、B、AB 必须全部从 `weights/pretrained/yolo11n-obb.pt` 独立起训，并使用相同 split、batch、epochs、seed、训练超参和评估协议。AB 不得从 A/B `best.pt` 续训，不得冻结 A 后只训 B，不得增加独有训练阶段。所有已完成的 VEDAI 配置已复核，均使用统一通用预训练权重。
 
 ## 实验矩阵
 
@@ -139,7 +141,7 @@ VEDAI AB-Plus 已完成训练和评估。它使用 A-Plus 的 P2 语义守门，
 
 1. Baseline：YOLO11n-OBB。
 2. 创新点 A：小目标特征增强，当前第一版采用 P2/4 OBB 检测分支。
-3. 创新点 B：遥感上下文注意力，当前实现为轻量 `SPPFLSK` 大选择核上下文模块。
+3. 创新点 B：neck 特征融合增强，当前主线为轻量 `C3k2PKI` / B-PKI-Lite；旧 `SPPFLSK` 仅保留为负向探索。
 4. 创新点 C：旋转目标几何适应，例如轻量 DCN/DCNv3 或动态检测头。
 5. 双创新点融合：优先尝试 A + B-PKI-Lite。
 6. 三创新点融合：A + B + C。
