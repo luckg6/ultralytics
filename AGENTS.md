@@ -526,9 +526,14 @@ baseline/A/B/C/AB/ABC 也都从 weights/pretrained/yolo11n-obb.pt 起训
 - UCAS-AOD 只做 baseline、A-P2、B-PKI-Lite、A+B-PKI-Lite 四组 EI 论文消融，配置位于 `experiments/ucas_aod/`。
 - UCAS-AOD 本地配置固定 `batch=4`、`cache=disk`；`/home/ws` 配置固定使用 1 号 GPU（`device=1`）、`batch=-1`、`cache=ram`。
 - UCAS-AOD 四组实验已完成，test 结果为：baseline 0.8017/0.7393、A-P2 0.7946/0.7291、B-PKI-Lite 0.8026/0.7434、AB 0.7930/0.7306，数值顺序为全尺度/小目标 mAP50-95。
-- UCAS-AOD 结论：B-PKI-Lite 四项指标均略高于 baseline；A-P2 和 AB 未复现 DIOR-R 增益。详细记录位于 `weights/experiments/ucas_aod/eval_ucas_aod_test_2026-07-17.md`。
+- UCAS-AOD 自动 batch 初轮中 B-PKI-Lite 四项指标均略高于 baseline；固定 `batch=32` 复核后，B 仅小目标 mAP50/mAP50-95 稳定提升，全尺度 mAP50-95 略低于 baseline。A-P2 和 AB 在两轮中都未复现 DIOR-R 增益。
 - 本轮四组使用 `batch=-1`，每 epoch 批次数分别为 14/23/16/24，说明自动 batch 随结构变化；严格论文对比建议最终以共同固定 batch 复核。
 - UCAS-AOD 已新增四份 `batch=32` 的 `/home/ws` 复核配置，文件名以 `_homews_batch32_verify.yaml` 结尾；它们使用 `device=1`、`cache=ram` 和独立的 `_b32_verify` 输出目录，不覆盖原始自动 batch 结果。
+- 固定 batch 复核结果为：baseline 0.8024/0.7371、A-P2 0.7921/0.7321、B-PKI-Lite 0.8006/0.7410、AB 0.7930/0.7306，数值顺序为全尺度/小目标 mAP50-95。详细记录位于 `weights/experiments/ucas_aod/eval_ucas_aod_test_batch32_2026-07-17.md`。
+- VEDAI-1024 已作为新的轻量微小目标 OBB 筛选数据集完成转换。本地原始目录为 `C:/E/datasets/VEDAI-1024/`，YOLO-OBB 输出为 `C:/E/datasets/VEDAI-1024-YOLO/`，服务器目录约定为 `/home/ws/datasets/VEDAI-1024-YOLO/`。
+- VEDAI 转换脚本为 `scripts/convert_vedai_to_yolo_obb.py`，只使用彩色 `_co.png`，九类采用官方 DevKit 定义，原始类别 7/8 共 7 个非官方稀有实例被记录并忽略。
+- VEDAI 固定筛选划分在训练前按类别直方图确定：官方 fold10 test、fold02 val、其余八个 fold train，对应 968/121/121 张图和 2950/368/369 个 OBB；约 96% 的目标在 `imgsz=640` 下满足 `w*h<1024`。
+- VEDAI 本地与 `/home/ws` 的 baseline/A/B/AB 配置位于 `experiments/vedai/`。服务器筛选固定 `batch=32`、`device=1`、`cache=ram`，不使用自动 batch。
 - 最终论文表格建议统一使用同一个 split，例如都用 `split='test'`，确保所有模型公平比较。
 - `cache='disk'` 会在 images 文件夹下生成 `.npy` 缓存文件，统计原始图片数量时不要把 `.npy` 算进去。
 

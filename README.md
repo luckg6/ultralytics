@@ -119,7 +119,9 @@ weights/pretrained/yolo11n-obb.pt -> 第二数据集 baseline/A/B/C/AB/ABC
 
 UCAS-AOD 本地数据位于 `C:/E/datasets/UCAS-AOD-YOLO/`，服务器约定放在 `/home/ws/datasets/UCAS-AOD-YOLO/`。数据集与四组消融训练命令见 `experiments/ucas_aod/README.md`。
 
-UCAS-AOD 四组消融已完成。B-PKI-Lite 在 test 全尺度 mAP50-95 上由 baseline 的 0.8017 提升到 0.8026，小目标 mAP50-95 由 0.7393 提升到 0.7434；A-P2 和 A+B-PKI-Lite 在该数据集上未超过 baseline。完整记录见 `weights/experiments/ucas_aod/eval_ucas_aod_test_2026-07-17.md`。
+UCAS-AOD 四组自动 batch 和固定 `batch=32` 复核均已完成。固定 batch 下，B-PKI-Lite 的小目标 mAP50-95 由 baseline 的 0.7371 提升到 0.7410，但全尺度 mAP50-95 从 0.8024 降至 0.8006；A-P2 和 A+B-PKI-Lite 仍未超过 baseline。完整记录见 `weights/experiments/ucas_aod/eval_ucas_aod_test_batch32_2026-07-17.md`。
+
+由于 UCAS-AOD 不支持 A/AB 的跨数据集增益，已新增 VEDAI-1024 作为轻量微小目标 OBB 筛选数据集。官方数据转换脚本为 `scripts/convert_vedai_to_yolo_obb.py`，固定使用官方 fold10 test、fold02 val、其余八个 fold train；转换与四组训练命令见 `experiments/vedai/README.md`。
 
 ## 实验矩阵
 

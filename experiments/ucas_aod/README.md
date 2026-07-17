@@ -102,4 +102,13 @@ runs/obb/ucas_aod_B_pki_lite_b32_verify/
 runs/obb/ucas_aod_AB_p2_pki_lite_b32_verify/
 ```
 
-复核时仍统一使用 `test --mode both`，重点比较固定 batch 后 `A > baseline`、`B > baseline` 和 `AB > A/B/baseline` 是否成立。
+四组复核已经完成，统一 `test --mode both` 结果如下：
+
+| 模型 | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
+|---|---:|---:|---:|---:|
+| baseline | **0.9785** | **0.8024** | 0.9199 | 0.7371 |
+| A-P2 | 0.9755 | 0.7921 | 0.9239 | 0.7321 |
+| B-PKI-Lite | 0.9764 | 0.8006 | **0.9246** | **0.7410** |
+| A+B-PKI-Lite | 0.9752 | 0.7930 | 0.9208 | 0.7306 |
+
+固定 batch 后，A 和 AB 仍低于 baseline；B 的小目标 mAP50/mAP50-95 稳定提升 +0.0047/+0.0039，但全尺度 mAP50-95 低 0.0018。完整双轮对照见 `weights/experiments/ucas_aod/eval_ucas_aod_test_batch32_2026-07-17.md`。

@@ -1,0 +1,18 @@
+# VEDAI-1024 color images converted to Ultralytics YOLO-OBB format on /home/ws.
+path: /home/ws/datasets/VEDAI-1024-YOLO
+
+train: images/train
+val: images/val
+test: images/test
+
+nc: 9
+names:
+  0: car
+  1: truck
+  2: tractor
+  3: camping_car
+  4: van
+  5: other
+  6: pickup
+  7: boat
+  8: plane

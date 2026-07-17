@@ -1,0 +1,17 @@
+status: ready
+variant: A_batch32
+description: Fixed-batch A-P2 on VEDAI-1024 for /home/ws.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-a-p2.yaml
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: ultralytics/cfg/datasets/VEDAI-1024-homews.yaml
+name: vedai_f10_A_p2
+epochs: 100
+batch: 32
+imgsz: 640
+seed: 42
+device: 1
+workers: 8
+cache: ram
+cos_lr: true
+amp: true
+deterministic: true

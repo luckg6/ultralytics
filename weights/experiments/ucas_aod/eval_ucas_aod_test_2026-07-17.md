@@ -44,8 +44,11 @@
 - 四组服务器配置都使用 `batch=-1`，自动 batch 导致每个 epoch 的批次数分别为 14、23、16、24。Ultralytics 会通过梯度累积接近名义 batch，但严格论文消融仍建议在最终结果确定后用共同固定 batch 复核。
 - A 的 `args.yaml` 记录原始运行名为 `ucas_aod_A_p22`，当前整理目录名为 `ucas_aod_A_p2`；权重与日志来自该次完整 100 epoch 训练。
 
+## 后续固定 batch 复核
+
+四组 `batch=32` 复核已经完成。A-P2 和 AB 仍低于 baseline；B-PKI-Lite 的小目标提升仍然成立，但全尺度提升不再成立。最终方法学判断应以 `eval_ucas_aod_test_batch32_2026-07-17.md` 为主，本文件保留为自动 batch 原始结果。
+
 ## 归档位置
 
 - 权重：`weights/experiments/ucas_aod/{baseline,a_p2,b_pki_lite,ab_p2_pki_lite}/best.pt`
 - 日志：`experiments/logs/ucas_aod/{baseline,a_p2,b_pki_lite,ab_p2_pki_lite}/`
-
