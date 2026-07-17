@@ -538,10 +538,15 @@ baseline/A/B/C/AB/ABC 也都从 weights/pretrained/yolo11n-obb.pt 起训
 - VEDAI 上只有 B-PKI-Lite 四项指标全部超过 baseline；A-P2 和 AB 都明显负向。AB 相对 A 有回升，但仍未超过 baseline。
 - VEDAI 当前结果是固定 fold10 单划分筛选，不是十折交叉验证均值。详细记录位于 `weights/experiments/vedai/eval_vedai_fold10_test_2026-07-17.md`。
 - 由于 VEDAI 不支持 A/AB 的跨数据集增益，不建议将其作为 AB 主方法的第二数据集主结果；可保留为 B 的辅助证据和负向数据集筛选记录。
-- VEDAI 专用 A-P2-Plus 已 ready：模型为 `ultralytics/cfg/models/11/remote_obb/yolo11n-obb-a-p2-plus.yaml`，本地配置为 `experiments/vedai/a_p2_plus.yaml`，`/home/ws` 固定 batch 配置为 `experiments/vedai/a_p2_plus_homews_batch32.yaml`。
+- VEDAI 专用 A-P2-Plus 已完成训练和评估：模型为 `ultralytics/cfg/models/11/remote_obb/yolo11n-obb-a-p2-plus.yaml`，本地配置为 `experiments/vedai/a_p2_plus.yaml`，`/home/ws` 固定 batch 配置为 `experiments/vedai/a_p2_plus_homews_batch32.yaml`。
 - A-P2-Plus 保留 P2/4 检测分支，将 P2 实际通道从 32 增到 48、有效重复从 1 增到 2，并用独立 `C3k2P2Guard/P2SemanticGuard` 学习抑制缺少语义支持的 P2 背景响应；不使用 B 的 PKI 模块。
 - A-P2-Plus 在 VEDAI `nc=9` 下构建参数量 2,803,925，13.8 GFLOPs；相对同口径 baseline 增加 140,663（约 `+5.28%`）。四层 stride 4/8/16/32、预训练迁移 297/694 项、dummy forward 和守门反向梯度均已通过。
-- A-P2-Plus 应先单独训练并与 VEDAI baseline 对比；只有单点结果达到预期后再新建 AB-Plus，不直接覆盖已完成的旧 AB。
+- A-P2-Plus fold10 test 结果为：全尺度 0.7310/0.5507，小目标 0.7054/0.5444，数值顺序为 mAP50/mAP50-95。小目标相对 baseline 提升 `+0.0223/+0.0151`，也高于 B `+0.0040/+0.0079`；全尺度 mAP50-95 仍比 baseline 低 `0.0154`。
+- A-P2-Plus 权重位于 `weights/experiments/vedai/a_p2_plus/best.pt`，日志位于 `experiments/logs/vedai/a_p2_plus/`。当前 B 全尺度最佳，A-P2-Plus 小目标最佳，已据此新建独立 AB-Plus，不覆盖旧 AB。
+- VEDAI AB-Plus 已 ready：模型为 `ultralytics/cfg/models/11/remote_obb/yolo11n-obb-ab-p2-plus-pki-lite.yaml`，本地配置为 `experiments/vedai/ab_p2_plus_pki_lite.yaml`，`/home/ws` 配置为 `experiments/vedai/ab_p2_plus_pki_lite_homews_batch32.yaml`。
+- AB-Plus 中第 13/16 层为 B 的 `C3k2PKI`，第 19 层为 A-Plus 的 `C3k2P2Guard`，OBB 仍输出 stride 4/8/16/32；不改 loss、解码或 NMS，不覆盖旧 AB。
+- AB-Plus 在 VEDAI `nc=9` 下构建参数量 2,845,975，14.0 GFLOPs，相对同口径 baseline 参数增加 182,713（约 `+6.86%`），相对 A-P2-Plus 只增加 42,050。
+- AB-Plus 已通过本地与 `/home/ws` dry-run、预训练迁移 297/766 项、dummy forward `(1, 14, 34000)`、模块层号和 PKI/P2Guard 反向梯度检查，当前待训练。
 - 最终论文表格建议统一使用同一个 split，例如都用 `split='test'`，确保所有模型公平比较。
 - `cache='disk'` 会在 images 文件夹下生成 `.npy` 缓存文件，统计原始图片数量时不要把 `.npy` 算进去。
 

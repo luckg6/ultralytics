@@ -67,7 +67,7 @@ B-PKI-Lite 四项指标均高于 baseline；A-P2 和 AB 则明显低于 baseline
 
 该结果是固定 fold10 单划分筛选，不是完整十折均值。由于它不支持 A/AB 的跨数据集增益，VEDAI 不建议作为当前 AB 主方法的第二数据集主结果。
 
-## 待训练 A-P2-Plus
+## A-P2-Plus 实验
 
 旧 A-P2 在 VEDAI 上的召回率与 baseline 接近，但精确率明显下降。A-P2-Plus 不改变 A 的核心定义，仍为新增 P2/4 检测分支，但对 P3→P2 融合进行三项加强：
 
@@ -103,4 +103,51 @@ python scripts/train_obb.py --config experiments/vedai/a_p2_plus_homews_batch32.
 python scripts/evaluate_obb.py --model runs/obb/vedai_f10_A_p2_plus/weights/best.pt --data VEDAI-1024-homews.yaml --split test --mode both
 ```
 
-建议先验收 A-P2-Plus 能否超过 baseline 的 0.5661/0.5293（全尺度/小目标 mAP50-95），再构建对应 AB-Plus，避免在 A 单点仍负向时继续浪费训练资源。
+A-P2-Plus 已使用上述 `/home/ws` 固定 `batch=32` 配置训练完成：
+
+| 模型 | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
+|---|---:|---:|---:|---:|
+| baseline | 0.7300 | **0.5661** | 0.6831 | 0.5293 |
+| 旧 A-P2 | 0.6526 | 0.4687 | 0.5978 | 0.4311 |
+| B-PKI-Lite | **0.7482** | **0.5756** | 0.7014 | 0.5365 |
+| A-P2-Plus | 0.7310 | 0.5507 | **0.7054** | **0.5444** |
+
+A-P2-Plus 小目标 mAP50/mAP50-95 相对 baseline 提升 `+0.0223/+0.0151`，相对旧 A 提升 `+0.1076/+0.1133`，小目标两项均是当前最佳。其全尺度 mAP50 略高于 baseline `+0.0010`，但 mAP50-95 仍低 `0.0154`。
+
+守门模块已将全尺度 precision 从 baseline 的 0.657 提高到 0.777，同时 recall 从 0.679 降到 0.614，说明它成功抑制了旧 P2 的误检，但筛选略显保守。当前 B 的全尺度指标最好，A-P2-Plus 的小目标指标最好，因此下一步构建 AB-Plus 已有比较明确的互补依据。
+
+权重已归档至 `weights/experiments/vedai/a_p2_plus/best.pt`，训练日志已整理至 `experiments/logs/vedai/a_p2_plus/`。
+
+## 待训练 AB-Plus
+
+AB-Plus 组合 A-P2-Plus 和 B-PKI-Lite，不覆盖旧 AB：
+
+- A-Plus：第 19 层使用 `C3k2P2Guard`，负责加宽、加深 P2 分支和语义误检抑制。
+- B-PKI-Lite：只在第 13、16 层使用 `C3k2PKI`，负责 P5→P4、P4→P3 的 top-down neck 上下文融合。
+- OBB 仍为 P2/P3/P4/P5 四层输出，不改 loss、解码、NMS 和评估协议。
+
+| 构建口径 | Params | GFLOPs | 相对 baseline Params |
+|---|---:|---:|---:|
+| baseline | 2,663,262 | 6.6 | - |
+| A-P2-Plus | 2,803,925 | 13.8 | +5.28% |
+| AB-Plus | 2,845,975 | 14.0 | +6.86% |
+
+本地训练：
+
+```bash
+python scripts/train_obb.py --config experiments/vedai/ab_p2_plus_pki_lite.yaml
+```
+
+`/home/ws` 固定 `batch=32`、1 号 GPU、RAM cache：
+
+```bash
+python scripts/train_obb.py --config experiments/vedai/ab_p2_plus_pki_lite_homews_batch32.yaml
+```
+
+训练完成后评估：
+
+```bash
+python scripts/evaluate_obb.py --model runs/obb/vedai_f10_AB_p2_plus_pki_lite/weights/best.pt --data VEDAI-1024-homews.yaml --split test --mode both
+```
+
+基本验收线是四项指标都超过 baseline：`0.7300/0.5661/0.6831/0.5293`。理想目标是同时超过 B 的全尺度 `0.7482/0.5756` 和 A-P2-Plus 的小目标 `0.7054/0.5444`。
