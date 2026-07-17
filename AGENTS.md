@@ -525,6 +525,10 @@ baseline/A/B/C/AB/ABC 也都从 weights/pretrained/yolo11n-obb.pt 起训
 - UCAS-AOD 固定使用 755/302/453 的 train/val/test 划分，共 14597 个 OBB 实例；在 `imgsz=640` 下按本项目 `w*h<1024` 协议统计，小目标约占 71%。
 - UCAS-AOD 只做 baseline、A-P2、B-PKI-Lite、A+B-PKI-Lite 四组 EI 论文消融，配置位于 `experiments/ucas_aod/`。
 - UCAS-AOD 本地配置固定 `batch=4`、`cache=disk`；`/home/ws` 配置固定使用 1 号 GPU（`device=1`）、`batch=-1`、`cache=ram`。
+- UCAS-AOD 四组实验已完成，test 结果为：baseline 0.8017/0.7393、A-P2 0.7946/0.7291、B-PKI-Lite 0.8026/0.7434、AB 0.7930/0.7306，数值顺序为全尺度/小目标 mAP50-95。
+- UCAS-AOD 结论：B-PKI-Lite 四项指标均略高于 baseline；A-P2 和 AB 未复现 DIOR-R 增益。详细记录位于 `weights/experiments/ucas_aod/eval_ucas_aod_test_2026-07-17.md`。
+- 本轮四组使用 `batch=-1`，每 epoch 批次数分别为 14/23/16/24，说明自动 batch 随结构变化；严格论文对比建议最终以共同固定 batch 复核。
+- UCAS-AOD 已新增四份 `batch=32` 的 `/home/ws` 复核配置，文件名以 `_homews_batch32_verify.yaml` 结尾；它们使用 `device=1`、`cache=ram` 和独立的 `_b32_verify` 输出目录，不覆盖原始自动 batch 结果。
 - 最终论文表格建议统一使用同一个 split，例如都用 `split='test'`，确保所有模型公平比较。
 - `cache='disk'` 会在 images 文件夹下生成 `.npy` 缓存文件，统计原始图片数量时不要把 `.npy` 算进去。
 

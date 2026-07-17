@@ -119,6 +119,8 @@ weights/pretrained/yolo11n-obb.pt -> 第二数据集 baseline/A/B/C/AB/ABC
 
 UCAS-AOD 本地数据位于 `C:/E/datasets/UCAS-AOD-YOLO/`，服务器约定放在 `/home/ws/datasets/UCAS-AOD-YOLO/`。数据集与四组消融训练命令见 `experiments/ucas_aod/README.md`。
 
+UCAS-AOD 四组消融已完成。B-PKI-Lite 在 test 全尺度 mAP50-95 上由 baseline 的 0.8017 提升到 0.8026，小目标 mAP50-95 由 0.7393 提升到 0.7434；A-P2 和 A+B-PKI-Lite 在该数据集上未超过 baseline。完整记录见 `weights/experiments/ucas_aod/eval_ucas_aod_test_2026-07-17.md`。
+
 ## 实验矩阵
 
 每个数据集上建议保留 1 个 baseline 和 5 个改进实验：

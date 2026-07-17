@@ -54,7 +54,7 @@ python scripts/train_obb.py --config experiments/ucas_aod/b_pki_lite_homews.yaml
 python scripts/train_obb.py --config experiments/ucas_aod/ab_p2_pki_lite_homews.yaml
 ```
 
-建议按 baseline、A、B、AB 的顺序运行。服务器实际采用的自动 batch 会写入各自的 `args.yaml`，整理论文表格时需要一并记录。
+建议按 baseline、A、B、AB 的顺序运行。`args.yaml` 会保留 `batch=-1`，不会记录自动选择后的具体 batch；本轮可由每 epoch 批次数确认四种结构实际采用了不同 batch。严格论文消融建议最终用共同固定 batch 复核。
 
 ## 评估
 
@@ -67,4 +67,39 @@ python scripts/evaluate_obb.py --model runs/obb/ucas_aod_B_pki_lite/weights/best
 python scripts/evaluate_obb.py --model runs/obb/ucas_aod_AB_p2_pki_lite/weights/best.pt --data UCAS-AOD.yaml --split test --mode both
 ```
 
-论文消融表必须保留四行，重点检查 `B > baseline` 以及 `AB > A` 是否在 UCAS-AOD 上同时成立。
+## 当前结果
+
+四组实验已于 2026-07-17 完成，并统一在 `test` split 上重评：
+
+| 模型 | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
+|---|---:|---:|---:|---:|
+| baseline | 0.9770 | 0.8017 | 0.9226 | 0.7393 |
+| A-P2 | 0.9781 | 0.7946 | 0.9216 | 0.7291 |
+| B-PKI-Lite | **0.9787** | **0.8026** | **0.9287** | **0.7434** |
+| A+B-PKI-Lite | 0.9752 | 0.7930 | 0.9208 | 0.7306 |
+
+完整评估、参数量、训练期最佳 epoch 和公平性备注见 `weights/experiments/ucas_aod/eval_ucas_aod_test_2026-07-17.md`。
+
+结论：B-PKI-Lite 在四项指标上均略高于 baseline；A-P2 和 AB 没有复现 DIOR-R 上的增益。因此 UCAS-AOD 可以支持 B 的跨数据集有效性，但当前不能用于声称 A 或 AB 在所有数据集上都稳定提升。
+
+## 固定 batch=32 复核
+
+保留上述 `batch=-1` 原始结果不动，另建四组固定 `batch=32` 的 `/home/ws` 复核实验。除 batch 和独立实验名外，其余设置与原实验保持一致，仍使用 1 号 GPU、RAM cache、`seed=42` 和相同预训练权重。
+
+```bash
+python scripts/train_obb.py --config experiments/ucas_aod/baseline_homews_batch32_verify.yaml
+python scripts/train_obb.py --config experiments/ucas_aod/a_p2_homews_batch32_verify.yaml
+python scripts/train_obb.py --config experiments/ucas_aod/b_pki_lite_homews_batch32_verify.yaml
+python scripts/train_obb.py --config experiments/ucas_aod/ab_p2_pki_lite_homews_batch32_verify.yaml
+```
+
+对应输出目录为：
+
+```text
+runs/obb/ucas_aod_baseline_yolo11n_obb_b32_verify/
+runs/obb/ucas_aod_A_p2_b32_verify/
+runs/obb/ucas_aod_B_pki_lite_b32_verify/
+runs/obb/ucas_aod_AB_p2_pki_lite_b32_verify/
+```
+
+复核时仍统一使用 `test --mode both`，重点比较固定 batch 后 `A > baseline`、`B > baseline` 和 `AB > A/B/baseline` 是否成立。
