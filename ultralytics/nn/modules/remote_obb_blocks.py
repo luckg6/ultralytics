@@ -20,6 +20,7 @@ __all__ = (
     "LSKBlock",
     "PKIContext",
     "P2SemanticGuard",
+    "ResidualFeatureBlend",
     "SPPFLSK",
 )
 
@@ -242,6 +243,22 @@ class C3k2P2Guard(C3k2):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Fuse top-down and backbone P2 features, then suppress unsupported details."""
         return self.guard(super().forward(x))
+
+
+class ResidualFeatureBlend(nn.Module):
+    """Inject an auxiliary feature path through a zero-initialized channel-wise residual gate."""
+
+    def __init__(self, c1: int):
+        """Initialize an identity-preserving blend for two equal-channel feature maps."""
+        super().__init__()
+        self.alpha = nn.Parameter(torch.zeros(1, c1, 1, 1))
+
+    def forward(self, features: list[torch.Tensor]) -> torch.Tensor:
+        """Blend the main and auxiliary paths while starting exactly from the main path."""
+        main, auxiliary = features
+        if main.shape != auxiliary.shape:
+            raise ValueError(f"ResidualFeatureBlend requires matching shapes, got {main.shape} and {auxiliary.shape}")
+        return main + torch.tanh(self.alpha) * (auxiliary - main)
 
 
 class DirectionalGeoAttention(nn.Module):

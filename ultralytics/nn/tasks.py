@@ -65,6 +65,7 @@ from ultralytics.nn.modules import (
     LSKBlock,
     Pose,
     Pose26,
+    ResidualFeatureBlend,
     RepC3,
     RepConv,
     RepNCSPELAN4,
@@ -1688,6 +1689,11 @@ def parse_model(d, ch, verbose=True):
             args = [ch[f], *args]
         elif m is LSKBlock:
             c2 = ch[f]
+            args = [c2, *args]
+        elif m is ResidualFeatureBlend:
+            if len(f) != 2 or ch[f[0]] != ch[f[1]]:
+                raise ValueError(f"ResidualFeatureBlend requires two equal-channel inputs, got {[ch[x] for x in f]}")
+            c2 = ch[f[0]]
             args = [c2, *args]
         elif m in frozenset({HGStem, HGBlock}):
             c1, cm, c2 = ch[f], args[0], args[1]

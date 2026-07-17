@@ -107,6 +107,7 @@ from .remote_obb_blocks import (
     LSKBlock,
     P2SemanticGuard,
     PKIContext,
+    ResidualFeatureBlend,
     SPPFLSK,
 )
 from .transformer import (
@@ -140,6 +141,7 @@ __all__ = (
     "OBBSETHBS",
     "P2SemanticGuard",
     "PSA",
+    "ResidualFeatureBlend",
     "SPP",
     "SPPELAN",
     "SPPF",

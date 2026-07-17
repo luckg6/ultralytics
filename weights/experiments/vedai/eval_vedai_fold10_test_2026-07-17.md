@@ -2,7 +2,7 @@
 
 ## 评估协议
 
-- 五组模型统一使用 `batch=32`、`device=1`、`cache=ram`、`seed=42` 训练 100 epoch。
+- 六组模型统一使用 `batch=32`、`device=1`、`cache=ram`、`seed=42` 训练 100 epoch。
 - 所有模型都从 `weights/pretrained/yolo11n-obb.pt` 独立起训。
 - 固定单划分：官方 fold01、03-09 训练，fold02 验证，fold10 测试。
 - 测试集：121 张图像、369 个 OBB。
@@ -19,6 +19,7 @@
 | B-PKI-Lite | 52 | 0.51923 | **0.7482** | **0.5756** | 0.7014 | 0.5365 |
 | A+B-PKI-Lite | 73 | 0.46672 | 0.6782 | 0.4994 | 0.6320 | 0.4674 |
 | A-P2-Plus | 73 | 0.49986 | 0.7310 | 0.5507 | **0.7054** | **0.5444** |
+| A-P2-Plus+B-PKI-Lite | 75 | 0.48800 | 0.6862 | 0.5263 | 0.6501 | 0.4955 |
 
 ## 相对 baseline
 
@@ -28,6 +29,7 @@
 | B-PKI-Lite | **+0.0182** | **+0.0095** | **+0.0183** | **+0.0072** |
 | A+B-PKI-Lite | -0.0518 | -0.0667 | -0.0511 | -0.0619 |
 | A-P2-Plus | +0.0010 | -0.0154 | **+0.0223** | **+0.0151** |
+| A-P2-Plus+B-PKI-Lite | -0.0438 | -0.0398 | -0.0330 | -0.0338 |
 
 ## 复杂度
 
@@ -38,6 +40,7 @@
 | B-PKI-Lite | 2,697,528 | 6.8 | 507.5 s |
 | A+B-PKI-Lite | 2,738,938 | 10.7 | 574.4 s |
 | A-P2-Plus | 2,795,513 | 13.5 | 655.8 s |
+| A-P2-Plus+B-PKI-Lite | 2,837,563 | 13.8 | 707.8 s |
 
 ## 结论
 
@@ -47,9 +50,12 @@
 - A-P2-Plus 相对旧 A 的四项指标分别回升 `+0.0784/+0.0820/+0.1076/+0.1133`，说明加强 P2 语义筛选明显有效。
 - A-P2-Plus 的小目标 mAP50/mAP50-95 比 baseline 提升 `+0.0223/+0.0151`，并超过 B `+0.0040/+0.0079`；但全尺度 mAP50-95 仍比 baseline 低 `0.0154`。
 - A-P2-Plus 全尺度 P/R 为 `0.777/0.614`，相比 baseline 的 `0.657/0.679` 表明守门模块已显著压低误检，但也损失了一部分召回。
-- 当前 B 是全尺度最佳，A-P2-Plus 是小目标最佳，两者具有清晰互补性；下一步值得构建 AB-Plus，验证能否同时超过 baseline 和 B。
+- AB-Plus 相对旧 AB 四项指标回升 `+0.0080/+0.0269/+0.0181/+0.0281`，说明 A-Plus 也能改善组合模型；但四项指标仍都低于 baseline。
+- AB-Plus 相对 A-P2-Plus 四项指标下降 `-0.0448/-0.0244/-0.0553/-0.0489`，相对 B 下降 `-0.0620/-0.0493/-0.0513/-0.0410`。
+- AB-Plus 全尺度 P/R 为 `0.625/0.666`：相比 A-P2-Plus 的 `0.777/0.614`，B 恢复了部分召回，但也明显冲淡了 P2SemanticGuard 的误检抑制。
+- 当前串联组合没有实现指标互补；VEDAI 主结果仍是 B 全尺度最佳、A-P2-Plus 小目标最佳。
 
 ## 归档位置
 
-- 权重：`weights/experiments/vedai/{baseline,a_p2,a_p2_plus,b_pki_lite,ab_p2_pki_lite}/best.pt`
-- 训练日志：`experiments/logs/vedai/{baseline,a_p2,a_p2_plus,b_pki_lite,ab_p2_pki_lite}/`
+- 权重：`weights/experiments/vedai/{baseline,a_p2,a_p2_plus,b_pki_lite,ab_p2_pki_lite,ab_p2_plus_pki_lite}/best.pt`
+- 训练日志：`experiments/logs/vedai/{baseline,a_p2,a_p2_plus,b_pki_lite,ab_p2_pki_lite,ab_p2_plus_pki_lite}/`

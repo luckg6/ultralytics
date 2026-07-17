@@ -118,7 +118,7 @@ A-P2-Plus 小目标 mAP50/mAP50-95 相对 baseline 提升 `+0.0223/+0.0151`，�
 
 权重已归档至 `weights/experiments/vedai/a_p2_plus/best.pt`，训练日志已整理至 `experiments/logs/vedai/a_p2_plus/`。
 
-## 待训练 AB-Plus
+## AB-Plus 实验
 
 AB-Plus 组合 A-P2-Plus 和 B-PKI-Lite，不覆盖旧 AB：
 
@@ -151,3 +151,52 @@ python scripts/evaluate_obb.py --model runs/obb/vedai_f10_AB_p2_plus_pki_lite/we
 ```
 
 基本验收线是四项指标都超过 baseline：`0.7300/0.5661/0.6831/0.5293`。理想目标是同时超过 B 的全尺度 `0.7482/0.5756` 和 A-P2-Plus 的小目标 `0.7054/0.5444`。
+
+AB-Plus 已使用固定 `batch=32` 配置训练完成，未达到上述验收线：
+
+| 模型 | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
+|---|---:|---:|---:|---:|
+| baseline | 0.7300 | 0.5661 | 0.6831 | 0.5293 |
+| B-PKI-Lite | **0.7482** | **0.5756** | 0.7014 | 0.5365 |
+| A-P2-Plus | 0.7310 | 0.5507 | **0.7054** | **0.5444** |
+| AB-Plus | 0.6862 | 0.5263 | 0.6501 | 0.4955 |
+
+AB-Plus 相对旧 AB 四项指标回升 `+0.0080/+0.0269/+0.0181/+0.0281`，但相对 baseline 仍分别下降 `-0.0438/-0.0398/-0.0330/-0.0338`。其全尺度 P/R 为 `0.625/0.666`，说明 B 恢复了 A-Plus 的一部分召回，但同时冲淡了语义守门的误检抑制。当前串联结构下 A-Plus 和 B 存在特征干扰，没有实现预期互补。
+
+权重已归档至 `weights/experiments/vedai/ab_p2_plus_pki_lite/best.pt`，日志已整理至 `experiments/logs/vedai/ab_p2_plus_pki_lite/`。
+
+## 待训练 AB-Plus-Decoupled
+
+串联 AB-Plus 中 B 改变了送入 P2SemanticGuard 的 P3 特征，导致 A-Plus 的误检抑制失效。AB-Plus-Decoupled 改为双路 neck：
+
+- A 主路的 0-28 层与已验证的 A-P2-Plus 完全一致，P2Guard 仍只接收普通 P3 融合特征。
+- B 从 backbone P5 独立建立 P5→P4→P3 `C3k2PKI` 辅助路径，不再串入 A 的 P2 分支。
+- B 只在最终 P3/P4 检测特征处通过 `ResidualFeatureBlend` 注入，P2 完全归 A 所有。
+- 融合系数为逐通道可学习参数且初始为 0，因此训练起点严格等价于 A 主路；只有 B 对 loss 有利时才会逐步注入。
+
+| 构建口径 | Params | GFLOPs | 相对 baseline Params |
+|---|---:|---:|---:|
+| baseline | 2,663,262 | 6.6 | - |
+| A-P2-Plus | 2,803,925 | 13.8 | +5.28% |
+| 串联 AB-Plus | 2,845,975 | 14.0 | +6.86% |
+| AB-Plus-Decoupled | 2,989,559 | 14.8 | +12.25% |
+
+本地训练：
+
+```bash
+python scripts/train_obb.py --config experiments/vedai/ab_p2_plus_pki_decoupled.yaml
+```
+
+`/home/ws` 固定 `batch=32`、1 号 GPU、RAM cache：
+
+```bash
+python scripts/train_obb.py --config experiments/vedai/ab_p2_plus_pki_decoupled_homews_batch32.yaml
+```
+
+训练完成后评估：
+
+```bash
+python scripts/evaluate_obb.py --model runs/obb/vedai_f10_AB_p2_plus_pki_decoupled/weights/best.pt --data VEDAI-1024-homews.yaml --split test --mode both
+```
+
+必须首先超过 baseline 四项 `0.7300/0.5661/0.6831/0.5293`。最终成功标准是超过 B 的全尺度 `0.7482/0.5756` 与 A-P2-Plus 的小目标 `0.7054/0.5444`。
