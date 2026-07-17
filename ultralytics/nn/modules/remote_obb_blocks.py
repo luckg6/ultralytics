@@ -12,12 +12,14 @@ __all__ = (
     "C3k2Geo",
     "C3k2GeoPlus",
     "C3k2GRA",
+    "C3k2P2Guard",
     "C3k2PKI",
     "DirectionalGeoAttention",
     "DirectionalGeoPlusAttention",
     "GRALiteAttention",
     "LSKBlock",
     "PKIContext",
+    "P2SemanticGuard",
     "SPPFLSK",
 )
 
@@ -166,6 +168,80 @@ class C3k2PKI(C3k2):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply C3k2 followed by lightweight poly-kernel context modulation."""
         return self.pki(super().forward(x))
+
+
+class P2SemanticGuard(nn.Module):
+    """Suppress texture-driven P2 responses with low-frequency semantic context."""
+
+    def __init__(self, c1: int, expansion: float = 1.0, context_kernel: int = 11):
+        """Initialize local-detail, semantic-context, channel, and spatial gates."""
+        super().__init__()
+        c_mid = max(int(c1 * expansion), 32)
+        c_gate = max(c_mid // 4, 16)
+        pad = context_kernel // 2
+
+        self.reduce = ConvBNAct(c1, c_mid, 1, p=0)
+        self.local = nn.Sequential(
+            nn.Conv2d(c_mid, c_mid, 3, padding=1, groups=c_mid, bias=False),
+            nn.BatchNorm2d(c_mid),
+            nn.SiLU(inplace=True),
+        )
+        self.semantic = nn.Sequential(
+            nn.AvgPool2d(7, stride=1, padding=3),
+            nn.Conv2d(c_mid, c_mid, (1, context_kernel), padding=(0, pad), groups=c_mid, bias=False),
+            nn.Conv2d(c_mid, c_mid, (context_kernel, 1), padding=(pad, 0), groups=c_mid, bias=False),
+            nn.BatchNorm2d(c_mid),
+            nn.SiLU(inplace=True),
+        )
+        self.channel_gate = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(c_mid, c_gate, 1, bias=True),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(c_gate, c_mid, 1, bias=True),
+            nn.Sigmoid(),
+        )
+        self.spatial_gate = nn.Sequential(
+            nn.Conv2d(2, 1, 7, padding=3, bias=True),
+            nn.Sigmoid(),
+        )
+        self.restore = ConvBNAct(c_mid, c1, 1, p=0)
+        self.refine_scale = nn.Parameter(torch.zeros(1))
+        self.suppress_scale = nn.Parameter(torch.zeros(1))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Refine P2 details and learn to attenuate unsupported spatial responses."""
+        y = self.reduce(x)
+        context = self.local(y) + self.semantic(y)
+        channel = self.channel_gate(context)
+        spatial = self.spatial_gate(
+            torch.cat((context.mean(dim=1, keepdim=True), context.amax(dim=1, keepdim=True)), dim=1)
+        )
+        refined = self.restore(context * channel * spatial)
+        suppress = 2.0 * spatial - 1.0
+        return x * (1.0 + torch.tanh(self.suppress_scale) * suppress) + torch.tanh(self.refine_scale) * refined
+
+
+class C3k2P2Guard(C3k2):
+    """A strengthened C3k2 P2 fusion block with semantic false-positive suppression."""
+
+    def __init__(
+        self,
+        c1: int,
+        c2: int,
+        n: int = 1,
+        c3k: bool = False,
+        e: float = 0.5,
+        attn: bool = False,
+        g: int = 1,
+        shortcut: bool = True,
+    ):
+        """Initialize the base fusion block and its P2-specific semantic guard."""
+        super().__init__(c1, c2, n, c3k, e, attn, g, shortcut)
+        self.guard = P2SemanticGuard(c2)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Fuse top-down and backbone P2 features, then suppress unsupported details."""
+        return self.guard(super().forward(x))
 
 
 class DirectionalGeoAttention(nn.Module):

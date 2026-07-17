@@ -51,3 +51,56 @@ python scripts/evaluate_obb.py --model runs/obb/vedai_f10_AB_p2_pki_lite/weights
 ```
 
 若把权重拷回本机评估，将命令中的 `VEDAI-1024-homews.yaml` 换成 `VEDAI-1024.yaml`。
+
+## fold10 筛选结果
+
+四组固定 `batch=32` 实验已完成，以下数值均为 fold10 test 结果：
+
+| 模型 | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
+|---|---:|---:|---:|---:|
+| baseline | 0.7300 | 0.5661 | 0.6831 | 0.5293 |
+| A-P2 | 0.6526 | 0.4687 | 0.5978 | 0.4311 |
+| B-PKI-Lite | **0.7482** | **0.5756** | **0.7014** | **0.5365** |
+| A+B-PKI-Lite | 0.6782 | 0.4994 | 0.6320 | 0.4674 |
+
+B-PKI-Lite 四项指标均高于 baseline；A-P2 和 AB 则明显低于 baseline。AB 虽然比 A 好，但不足以抵消 P2 在该数据集上引入的误检。详细评估和复杂度记录见 `weights/experiments/vedai/eval_vedai_fold10_test_2026-07-17.md`。
+
+该结果是固定 fold10 单划分筛选，不是完整十折均值。由于它不支持 A/AB 的跨数据集增益，VEDAI 不建议作为当前 AB 主方法的第二数据集主结果。
+
+## 待训练 A-P2-Plus
+
+旧 A-P2 在 VEDAI 上的召回率与 baseline 接近，但精确率明显下降。A-P2-Plus 不改变 A 的核心定义，仍为新增 P2/4 检测分支，但对 P3→P2 融合进行三项加强：
+
+- P2 融合输出的实际通道数由 32 增加到 48。
+- P2 `C3k2` 的有效内部重复数由 1 增加到 2，隐藏扩展率提高到 0.75。
+- 新增 `P2SemanticGuard`，用低频语义上下文生成通道和空间门控，允许抑制缺少语义支持的高分辨率背景响应。
+
+该模块不使用 B-PKI-Lite 的多核 neck 结构，A 与 B 的实验边界保持独立。新模型与旧 A 也是独立 YAML，不会改变已有权重的行为。
+
+| 构建口径 | Params | GFLOPs |
+|---|---:|---:|
+| baseline | 2,663,262 | 6.6 |
+| 旧 A-P2 | 2,704,904 | 10.5 |
+| A-P2-Plus | 2,803,925 | 13.8 |
+
+A-P2-Plus 相对 baseline 增加 140,663 参数（约 `+5.28%`），相对旧 A 增加 99,021 参数（约 `+3.66%`）。
+
+本地训练：
+
+```bash
+python scripts/train_obb.py --config experiments/vedai/a_p2_plus.yaml
+```
+
+`/home/ws` 固定 `batch=32`、1 号 GPU 训练：
+
+```bash
+python scripts/train_obb.py --config experiments/vedai/a_p2_plus_homews_batch32.yaml
+```
+
+训练完后评估：
+
+```bash
+python scripts/evaluate_obb.py --model runs/obb/vedai_f10_A_p2_plus/weights/best.pt --data VEDAI-1024-homews.yaml --split test --mode both
+```
+
+建议先验收 A-P2-Plus 能否超过 baseline 的 0.5661/0.5293（全尺度/小目标 mAP50-95），再构建对应 AB-Plus，避免在 A 单点仍负向时继续浪费训练资源。

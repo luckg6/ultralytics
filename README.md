@@ -123,6 +123,10 @@ UCAS-AOD 四组自动 batch 和固定 `batch=32` 复核均已完成。固定 bat
 
 由于 UCAS-AOD 不支持 A/AB 的跨数据集增益，已新增 VEDAI-1024 作为轻量微小目标 OBB 筛选数据集。官方数据转换脚本为 `scripts/convert_vedai_to_yolo_obb.py`，固定使用官方 fold10 test、fold02 val、其余八个 fold train；转换与四组训练命令见 `experiments/vedai/README.md`。
 
+VEDAI-1024 四组固定 `batch=32` 筛选已完成。B-PKI-Lite 在 fold10 test 上的全尺度/小目标 mAP50-95 为 0.5756/0.5365，高于 baseline 的 0.5661/0.5293；A-P2 和 AB 均明显低于 baseline。因此 VEDAI 可作为 B 的辅助证据，但不适合作为当前 AB 主方法的第二数据集主结果。完整记录见 `weights/experiments/vedai/eval_vedai_fold10_test_2026-07-17.md`。
+
+为保留 A-P2 与 B-PKI-Lite 的方法主线，已新增 VEDAI 专用 A-P2-Plus：保留 P2/4 检测尺度，加宽、加深 P2 融合，并加入低频语义守门以抑制高分辨率误检。其参数量约 2.804M，相对 baseline 约 `+5.28%`；本地和 `/home/ws` 配置已 ready，命令见 `experiments/vedai/README.md`。
+
 ## 实验矩阵
 
 每个数据集上建议保留 1 个 baseline 和 5 个改进实验：

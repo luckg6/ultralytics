@@ -534,6 +534,14 @@ baseline/A/B/C/AB/ABC 也都从 weights/pretrained/yolo11n-obb.pt 起训
 - VEDAI 转换脚本为 `scripts/convert_vedai_to_yolo_obb.py`，只使用彩色 `_co.png`，九类采用官方 DevKit 定义，原始类别 7/8 共 7 个非官方稀有实例被记录并忽略。
 - VEDAI 固定筛选划分在训练前按类别直方图确定：官方 fold10 test、fold02 val、其余八个 fold train，对应 968/121/121 张图和 2950/368/369 个 OBB；约 96% 的目标在 `imgsz=640` 下满足 `w*h<1024`。
 - VEDAI 本地与 `/home/ws` 的 baseline/A/B/AB 配置位于 `experiments/vedai/`。服务器筛选固定 `batch=32`、`device=1`、`cache=ram`，不使用自动 batch。
+- VEDAI 四组实验已完成，fold10 test 的全尺度/小目标 mAP50-95 为：baseline 0.5661/0.5293、A-P2 0.4687/0.4311、B-PKI-Lite 0.5756/0.5365、AB 0.4994/0.4674。
+- VEDAI 上只有 B-PKI-Lite 四项指标全部超过 baseline；A-P2 和 AB 都明显负向。AB 相对 A 有回升，但仍未超过 baseline。
+- VEDAI 当前结果是固定 fold10 单划分筛选，不是十折交叉验证均值。详细记录位于 `weights/experiments/vedai/eval_vedai_fold10_test_2026-07-17.md`。
+- 由于 VEDAI 不支持 A/AB 的跨数据集增益，不建议将其作为 AB 主方法的第二数据集主结果；可保留为 B 的辅助证据和负向数据集筛选记录。
+- VEDAI 专用 A-P2-Plus 已 ready：模型为 `ultralytics/cfg/models/11/remote_obb/yolo11n-obb-a-p2-plus.yaml`，本地配置为 `experiments/vedai/a_p2_plus.yaml`，`/home/ws` 固定 batch 配置为 `experiments/vedai/a_p2_plus_homews_batch32.yaml`。
+- A-P2-Plus 保留 P2/4 检测分支，将 P2 实际通道从 32 增到 48、有效重复从 1 增到 2，并用独立 `C3k2P2Guard/P2SemanticGuard` 学习抑制缺少语义支持的 P2 背景响应；不使用 B 的 PKI 模块。
+- A-P2-Plus 在 VEDAI `nc=9` 下构建参数量 2,803,925，13.8 GFLOPs；相对同口径 baseline 增加 140,663（约 `+5.28%`）。四层 stride 4/8/16/32、预训练迁移 297/694 项、dummy forward 和守门反向梯度均已通过。
+- A-P2-Plus 应先单独训练并与 VEDAI baseline 对比；只有单点结果达到预期后再新建 AB-Plus，不直接覆盖已完成的旧 AB。
 - 最终论文表格建议统一使用同一个 split，例如都用 `split='test'`，确保所有模型公平比较。
 - `cache='disk'` 会在 images 文件夹下生成 `.npy` 缓存文件，统计原始图片数量时不要把 `.npy` 算进去。
 

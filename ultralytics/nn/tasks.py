@@ -41,6 +41,7 @@ from ultralytics.nn.modules import (
     C3k2Geo,
     C3k2GeoPlus,
     C3k2GRA,
+    C3k2P2Guard,
     C3k2PKI,
     C3x,
     CBFuse,
@@ -1603,6 +1604,7 @@ def parse_model(d, ch, verbose=True):
             C3k2Geo,
             C3k2GeoPlus,
             C3k2GRA,
+            C3k2P2Guard,
             C3k2PKI,
             RepNCSPELAN4,
             ELAN1,
@@ -1633,6 +1635,7 @@ def parse_model(d, ch, verbose=True):
             C3k2Geo,
             C3k2GeoPlus,
             C3k2GRA,
+            C3k2P2Guard,
             C3k2PKI,
             C2fAttn,
             C3,
@@ -1671,7 +1674,7 @@ def parse_model(d, ch, verbose=True):
             if m in repeat_modules:
                 args.insert(2, n)  # number of repeats
                 n = 1
-            if m in {C3k2, C3k2Geo, C3k2GeoPlus, C3k2GRA, C3k2PKI}:  # for M/L/X sizes
+            if m in {C3k2, C3k2Geo, C3k2GeoPlus, C3k2GRA, C3k2P2Guard, C3k2PKI}:  # for M/L/X sizes
                 legacy = False
                 if scale in "mlx":
                     args[3] = True
