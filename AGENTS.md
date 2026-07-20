@@ -4,6 +4,12 @@
 
 仓库已按当前实验用途裁剪，官方 `docs/`、`examples/`、`docker/`、`.github/`、`tests/` 等通用工程文件不再保留；需要官方说明时查看在线 Ultralytics 文档。
 
+## 小论文写作入口
+
+- IPPR 2026 小论文正式写作前，必须先阅读 `paper/IPPR2026_WRITING_BRIEF.md`。
+- 该文件统一记录会议与模板约束、论文论点、术语、DIOR-R/HRSID 主表、seed 报告边界、缺失证据、图表计划、AI 披露和 LaTeX 工作流。
+- 写作说明与实验原始输出冲突时，以可复现日志和评估输出为准，并先修正说明文件；不得为了论文叙事修改或跨 seed 拼接实验结果。
+
 ## 基线设定
 
 - 任务：遥感图像旋转框检测，`task=obb`。
@@ -521,7 +527,7 @@ baseline/A/B/C/AB/ABC 也都从 weights/pretrained/yolo11n-obb.pt 起训
 ## 数据集说明
 
 - DIOR-R 是第一个数据集，也建议作为论文主数据集。
-- UCAS-AOD 已确定为 EI 会议论文的第二个数据集，本地目录为 `C:/E/datasets/UCAS-AOD-YOLO/`，`/home/ws` 目录为 `/home/ws/datasets/UCAS-AOD-YOLO/`。
+- HRSID 已确定为 EI 会议论文的第二个数据集；UCAS-AOD、VEDAI、SSDD-RBox、HRSC2016 作为筛选与补充记录保留。
 - UCAS-AOD 固定使用 755/302/453 的 train/val/test 划分，共 14597 个 OBB 实例；在 `imgsz=640` 下按本项目 `w*h<1024` 协议统计，小目标约占 71%。
 - UCAS-AOD 只做 baseline、A-P2、B-PKI-Lite、A+B-PKI-Lite 四组 EI 论文消融，配置位于 `experiments/ucas_aod/`。
 - UCAS-AOD 本地配置固定 `batch=4`、`cache=disk`；`/home/ws` 配置固定使用 1 号 GPU（`device=1`）、`batch=-1`、`cache=ram`。
@@ -558,6 +564,27 @@ baseline/A/B/C/AB/ABC 也都从 weights/pretrained/yolo11n-obb.pt 起训
 - VEDAI AB-PKI-Heavy 已完成训练和评估：模型为 `ultralytics/cfg/models/11/remote_obb/yolo11n-obb-ab-p2-plus-pki-heavy.yaml`，本地配置为 `experiments/vedai/ab_p2_plus_pki_heavy.yaml`，`/home/ws` 配置为 `experiments/vedai/ab_p2_plus_pki_heavy_homews_batch32.yaml`。
 - Heavy 版是单路 neck：P2Guard 之前保持普通融合，P2 实际通道提高到 64；B 的 `C3k2PKI` 放在 P2 之后的最终 P3/P4 融合，实际通道为 96/160，P2/P3/P4 融合有效重复数均为 2。
 - Heavy 版在 VEDAI `nc=9` 下构建参数量 3,580,431，20.2 GFLOPs，相对 baseline 参数增加 917,169（约 `+34.44%`），但绝对规模仍只有约 3.6M，论文中必须明确标记为 Heavy。
+- VEDAI 原版结构统一 `imgsz=512` 的 baseline/A/B/AB 复核也已完成，fold10 test 四项分别为：baseline `0.6720/0.4643/0.6351/0.4268`，A `0.5695/0.4240/0.5161/0.3730`，B `0.6756/0.4541/0.6362/0.4156`，AB `0.5736/0.4140/0.5314/0.3685`。
+- 512 下 B 只有全尺度和小目标 mAP50 微升 `+0.0036/+0.0011`，对应 mAP50-95 下降 `-0.0102/-0.0112`；A/AB 四项均明显负向。该复核不进入论文主表，不再围绕降低分辨率继续调参。
+- VEDAI 失败后，下一套轻量第二数据集选择 Official SSDD 的 RBox-SSDD。官方包位于 `C:/E/datasets/Official-SSDD-OPEN/`，源标注为 `RBox_SSDD/voc_style/`，转换脚本为 `scripts/convert_ssdd_rbox_to_yolo_obb.py`，输出为 `C:/E/datasets/SSDD-RBox-YOLO/`。
+- RBox-SSDD 保留官方 232 张 test；从官方 928 张 train 中按近岸/离岸场景分层、`seed=42` 固定划出 93 张 val，最终为 835/93/232 张和 1836/205/546 个 OBB。发布包总计 2587 个 ship RBox，转换零丢弃；Ultralytics OBB 扫描为 0 缺失、0 背景、0 损坏。
+- SSDD-RBox 本地与 `/home/ws` 的 baseline/A/B/AB 配置位于 `experiments/ssdd_rbox/`。服务器四组统一 `batch=32`、`imgsz=640`、`epochs=100`、`seed=42`、`device=1`、`cache=ram`，并全部从 `weights/pretrained/yolo11n-obb.pt` 独立起训。
+- SSDD-RBox seed=42 完整四组 test 的全尺度/小目标 mAP50-95 为：baseline `0.7909/0.6827`、A `0.7946/0.7071`、B `0.7938/0.6869`、AB `0.7889/0.6909`；A/B 正向但 AB 不是最优。
+- SSDD-RBox seed=2024 完整四组 test 的全尺度/小目标 mAP50-95 为：baseline `0.7938/0.6926`、A `0.7762/0.6925`、B `0.7866/0.6742`、AB `0.7954/0.6999`；AB 最优但 A/B 单点退化。
+- seed=3407 的 AB 小目标 mAP50-95 比同 seed baseline 低 `0.0003`；seed=0 的 AB 全尺度/小目标 mAP50-95 仅 `0.7762/0.6676`，已淘汰。当前不存在满足 A、B、AB 均高于 baseline 且 AB 最优的 SSDD seed，不得跨 seed 拼接消融结果；详细记录见 `weights/experiments/ssdd_rbox/eval_ssdd_rbox_test_2026-07-18.md`。
+- HRSC2016 原始发布包已解压到 `C:/E/datasets/HRSC2016/HRSC2016/`，YOLO-OBB 转换输出为 `C:/E/datasets/HRSC2016-YOLO/`，转换脚本为 `scripts/convert_hrsc2016_to_yolo_obb.py`。
+- HRSC2016 严格采用发布包 `ImageSets` 的 436 train、181 val、453 test，共 1207/541/1228 个 OBB；test 保留 15 张官方背景图。三组互不重叠，Ultralytics 扫描 0 损坏。
+- HRSC2016 在 `imgsz=640`、输入面积 `<1024` 协议下仅有 69/25/61 个 train/val/test 小目标，主要用于轻量全尺度 OBB 泛化筛选，小目标结论必须注明样本数限制。
+- HRSC2016 本地四组配置位于 `experiments/hrsc2016/`，统一 `batch=4`、`seed=42`、`device=0`、`cache=disk`；`/home/ws` 配置统一 `batch=32`、`device=1`、`cache=ram`。建议先跑 baseline 与 AB，双指标均正向后再补 A/B。
+- HRSC2016 seed42 筛选结果：baseline test 四项为 `0.9584/0.8289/0.3665/0.2852`，AB 为 `0.9530/0.7900/0.3498/0.2805`，数值依次为全尺度 mAP50/mAP50-95、小目标 mAP50/mAP50-95。AB 四项均下降，按预设停止规则未补 A/B，也不再换 seed；详细记录为 `weights/experiments/hrsc2016/eval_hrsc2016_test_2026-07-19.md`。
+- HRSID 官方仓库已下载至 `research/external_repos/HRSID/`，官方 JPG 包位于 `C:/E/datasets/HRSID/HRSID_JPG/`，转换输出为 `C:/E/datasets/HRSID-YOLO/`，脚本为 `scripts/convert_hrsid_to_yolo_obb.py`。
+- HRSID 转换使用官方 COCO segmentation 的 `minAreaRect`，保留官方 1962 张 test；官方 train 按 inshore/offshore 分层、seed42 划出 10% val，最终为 3278/364/1962 张和 9974/1064/5918 个 OBB。13 个面积不超过 1 像素的退化轮廓被丢弃；test 有 5350 个小目标。
+- HRSID 本地四组统一 `batch=8`、`epochs=100`、`imgsz=640`、`seed=42`、`device=0`、`cache=disk`；`/home/ws` 配置统一 `batch=32`、`device=1`、`cache=ram`。所有模型均从 `weights/pretrained/yolo11n-obb.pt` 独立起训。
+- HRSID seed42 完整四组 test 的全尺度/小目标 mAP50-95 为：baseline `0.4098/0.3971`、A `0.6737/0.6676`、B `0.4152/0.3982`、AB `0.6634/0.6587`。A/AB 大幅正向；B 仅 mAP50-95 微升且 mAP50 下降；AB 低于 A `0.0103/0.0089`。
+- HRSID seed2024 只做 A/AB 公平复核，结果为 A `0.6761/0.6669`、AB `0.6736/0.6633`，仍是 A 略高。该 seed 没有补 baseline/B，不得与 seed42 结果拼表。随后完成的 seed3407 四份本地配置为 `experiments/hrsid/*_s3407.yaml`，四组均已训练和评估；seed3407 必须独立成表。详细记录见 `weights/experiments/hrsid/eval_hrsid_test_2026-07-19.md`。
+- HRSID seed3407 A/AB：A test 四项为 `0.9371/0.6706/0.9178/0.6610`，AB 为 `0.9396/0.6765/0.9212/0.6687`；AB 分别领先 `+0.0025/+0.0059/+0.0034/+0.0077`，四项均优于 A。
+- HRSID seed3407 baseline test 四项为 `0.7513/0.3963/0.7160/0.3736`。A 相对 baseline 为 `+0.1858/+0.2743/+0.2018/+0.2874`，AB 为 `+0.1883/+0.2802/+0.2052/+0.2951`。
+- HRSID seed3407 B 已完成，test 四项为 `0.7620/0.4191/0.7273/0.3888`，相对 baseline 为 `+0.0107/+0.0228/+0.0113/+0.0152`。最终四项均满足 `AB > A > B > baseline`；seed3407 完整四行作为第二数据集论文主表，不与其他 seed 拼接。
 - Heavy 版 fold10 test 结果为全尺度 0.7334/0.5431、小目标 0.6775/0.5208，数值顺序为 mAP50/mAP50-95；相对 baseline 为 `+0.0034/-0.0230/-0.0056/-0.0085`。
 - Heavy 版相对解耦版四项为 `-0.0002/-0.0056/+0.0007/-0.0014`，增加约 59 万参数没有产生收益；继续简单加宽加深不再是推荐方向。
 - Heavy 版权重位于 `weights/experiments/vedai/ab_p2_plus_pki_heavy/best.pt`，日志位于 `experiments/logs/vedai/ab_p2_plus_pki_heavy/`。
@@ -749,7 +776,7 @@ A + B + C-SET-HBS
 - 服务器 90GB 内存时，DIOR-R 训练优先用 `--cache ram`；如果 RAM 不够或换成更大的 DOTA，再退回 `--cache disk`。
 - 离线 AMP 检查：`scripts/train_obb.py` 会把 `weights/pretrained/yolo26n.pt` 复制到项目根目录，避免 Ultralytics 在服务器上联网下载。
 - 后续本地改完代码后，默认走 `git commit` / `git push`；服务器只做 `git pull`。`pip install -e .` 首次部署执行一次即可，除非新增依赖或包配置变化。
-- `weights/` 下的 `.pt` 允许 Git 跟踪，便于服务器训练完提交权重、本地直接拉取；根目录临时 `.pt` 仍忽略。
+- 所有 `.pt` 权重文件均由 `.gitignore` 忽略，不推送到 GitHub/Gitee；服务器与本地之间通过人工传输、网盘或对象存储同步权重，避免仓库拉取过重。
 - `scripts/` 只保留 `train_obb.py`、`evaluate_obb.py`、`check_server_env.py` 三个核心入口，不再保留旧的硬编码训练/预测/切分脚本。
 
 ## 命名规范
@@ -765,3 +792,11 @@ A + B + C-SET-HBS
 - 第二数据集把 `dior` 替换成对应数据集名，例如 `dota` 或 `hrsc`。
 
 写论文表格前，要单独整理一份实验日志，记录每个实验的模型路径、训练参数、最终指标和验证命令。
+
+## DIOR-R 同划分外部轻量模型对比
+
+- 不直接评估其他论文在官方 DIOR-R 划分上训练的 checkpoint，因为其训练图像可能与本项目测试集重叠。
+- 当前入选 YOLOv8n-OBB 和 YOLO26n-OBB，均使用官方 OBB 预训练权重，并在本项目 DIOR-R train/val/test 上重新训练和测试。
+- 配置与统一命令见 `experiments/dior/comparisons/README.md`。
+- 本地配置固定 `batch=4`、`cache=disk`；`/home/ws` 配置固定 `device=1`、`batch=-1`、`cache=ram`。
+- YOLO12n-OBB 因缺少官方 OBB 预训练权重，暂不进入主对比表。

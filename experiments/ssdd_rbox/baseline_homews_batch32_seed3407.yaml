@@ -1,0 +1,17 @@
+status: ready
+variant: baseline_batch32_seed3407
+description: Fixed-batch YOLO11n-OBB baseline on Official RBox-SSDD for /home/ws with seed 3407.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-baseline.yaml
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: ultralytics/cfg/datasets/SSDD-RBox-homews.yaml
+name: ssdd_rbox_baseline_yolo11n_obb_s3407_b32
+epochs: 100
+batch: 32
+imgsz: 640
+seed: 3407
+device: 1
+workers: 8
+cache: ram
+cos_lr: true
+amp: true
+deterministic: true

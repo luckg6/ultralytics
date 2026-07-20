@@ -66,7 +66,27 @@
 - Heavy 版全尺度 P/R 为 `0.640/0.704`：相比 baseline 提高了 recall，但 precision 下降，更大容量只让模型趋向多检出和更多误检。
 - 当前 VEDAI 主结果仍是 B 全尺度最佳、A-P2-Plus 小目标最佳。继续简单加宽加深已经没有依据；后续 AB 仍必须从统一 `weights/pretrained/yolo11n-obb.pt` 独立起训，只能用公平的结构设计解决组合问题。
 
+## imgsz=512 原版结构复核
+
+为避免 DIOR-R 重跑，同时检查 VEDAI 上原版 A/AB 的负向结果是否由 `imgsz=640` 引起，额外对完全相同的原版 baseline、A-P2、B-PKI-Lite、A+B-PKI-Lite 结构进行了统一 `imgsz=512` 复核。四组仍使用 `batch=32`、`seed=42`、100 epoch，并从同一个 `weights/pretrained/yolo11n-obb.pt` 独立起训。评估命令显式传入 `--imgsz 512`，小目标模式保留 358/369 个 test OBB；该小目标口径只在 512 四组内部横向比较。
+
+| 模型 | 最佳 val epoch | 最佳 val mAP50-95 | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
+|---|---:|---:|---:|---:|---:|---:|
+| baseline-512 | 43 | 0.41113 | 0.6720 | **0.4643** | 0.6351 | **0.4268** |
+| A-P2-512 | 73 | 0.39979 | 0.5695 | 0.4240 | 0.5161 | 0.3730 |
+| B-PKI-Lite-512 | 56 | **0.43225** | **0.6756** | 0.4541 | **0.6362** | 0.4156 |
+| A+B-PKI-Lite-512 | 67 | 0.39872 | 0.5736 | 0.4140 | 0.5314 | 0.3685 |
+
+| 模型 | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
+|---|---:|---:|---:|---:|
+| A-P2-512 相对 baseline-512 | -0.1025 | -0.0403 | -0.1190 | -0.0538 |
+| B-PKI-Lite-512 相对 baseline-512 | +0.0036 | -0.0102 | +0.0011 | -0.0112 |
+| A+B-PKI-Lite-512 相对 baseline-512 | -0.0984 | -0.0503 | -0.1037 | -0.0583 |
+
+结论：512 复核失败。B 仅在 mAP50 上出现不足 0.004 的微升，两个 mAP50-95 均下降，不能视为稳定正向；A 和 AB 四项均明显低于同分辨率 baseline。原版 P2 分支在 VEDAI 上的负向表现并非通过降低输入分辨率即可解决。该组不进入论文主表，已有 640 结果仍独立保留。
+
 ## 归档位置
 
 - 权重：`weights/experiments/vedai/{baseline,a_p2,a_p2_plus,b_pki_lite,ab_p2_pki_lite,ab_p2_plus_pki_lite,ab_p2_plus_pki_decoupled,ab_p2_plus_pki_heavy}/best.pt`
 - 训练日志：`experiments/logs/vedai/{baseline,a_p2,a_p2_plus,b_pki_lite,ab_p2_pki_lite,ab_p2_plus_pki_lite,ab_p2_plus_pki_decoupled,ab_p2_plus_pki_heavy}/`
+- 512 原始输出：`runs/obb/vedai_f10_512_{baseline_yolo11n_obb,A_p2,B_pki_lite,AB_p2_pki_lite}/`（权重仅本地保留，不再由 Git 跟踪）

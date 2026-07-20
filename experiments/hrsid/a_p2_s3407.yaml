@@ -1,0 +1,17 @@
+status: ready
+variant: A_p2
+description: Seed 3407 verification of A-P2 on official HRSID.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-a-p2.yaml
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: ultralytics/cfg/datasets/HRSID.yaml
+name: hrsid_A_p2_s3407
+epochs: 100
+batch: 8
+imgsz: 640
+seed: 3407
+device: 0
+workers: 4
+cache: disk
+cos_lr: true
+amp: true
+deterministic: true

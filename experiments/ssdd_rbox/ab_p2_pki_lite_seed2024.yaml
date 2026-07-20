@@ -1,0 +1,17 @@
+status: ready
+variant: AB_seed2024
+description: A-P2 plus B-PKI-Lite on Official RBox-SSDD with seed 2024.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-ab-p2-pki-lite.yaml
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: ultralytics/cfg/datasets/SSDD-RBox.yaml
+name: ssdd_rbox_AB_p2_pki_lite_s2024
+epochs: 100
+batch: 4
+imgsz: 640
+seed: 2024
+device: 0
+workers: 4
+cache: disk
+cos_lr: true
+amp: true
+deterministic: true

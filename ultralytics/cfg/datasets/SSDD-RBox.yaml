@@ -1,0 +1,10 @@
+# Official RBox-SSDD converted to Ultralytics YOLO-OBB format.
+path: C:/E/datasets/SSDD-RBox-YOLO
+
+train: images/train
+val: images/val
+test: images/test
+
+nc: 1
+names:
+  0: ship

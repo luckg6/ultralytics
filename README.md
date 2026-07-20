@@ -8,7 +8,7 @@
 - 论文定位：EI 会议论文 + 毕业学位论文。
 - 基础模型：`weights/pretrained/yolo11n-obb.pt`。
 - 主数据集：DIOR-R。
-- 第二数据集：UCAS-AOD，已转换为 Ultralytics YOLO-OBB 格式并完成 baseline/A/B/AB 一键训练配置。
+- 第二数据集：HRSID。seed3407 已完成 baseline/A/B/AB 四组，并实现四项一致的 `AB > A > B > baseline`；UCAS-AOD、VEDAI、SSDD-RBox、HRSC2016 保留为筛选记录。
 - 论文实验目标：设计 3 个轻量、可解释、可消融的模型改进点，并验证单独改进和组合改进的效果。
 
 ## 当前 Baseline
@@ -132,6 +132,20 @@ VEDAI AB-Plus 已完成训练和评估。它使用 A-Plus 的 P2 语义守门，
 针对串联干扰新增的 VEDAI AB-Plus-Decoupled 已完成训练和评估。它完整保留 A-P2-Plus 主路，B-PKI-Lite 使用独立 top-down 辅助路径，并通过零初始化逐通道残差门只在最终 P3/P4 特征注入。fold10 test 四项为 0.7336/0.5487/0.6768/0.5222，比串联 AB-Plus 明显恢复，但只有全尺度 mAP50 超过 baseline，尚未达到 AB 成功标准。
 
 结构更直接的 VEDAI AB-PKI-Heavy 也已完成训练和评估。它使用单路径，P2Guard 之前保持普通融合，将 B-PKI 后移到最终 P3/P4 层，并同时增加 P2/P3/P4 通道和深度。fold10 test 四项为 0.7334/0.5431/0.6775/0.5208，与解耦版接近但未更好，说明继续简单增加容量不能解决 VEDAI 上的 AB 组合问题。
+
+为保持 DIOR-R 原版 A/B/AB 结构不变，VEDAI 又完成了统一 `imgsz=512` 的四组复核。baseline 四项为 0.6720/0.4643/0.6351/0.4268；A 为 0.5695/0.4240/0.5161/0.3730；B 为 0.6756/0.4541/0.6362/0.4156；AB 为 0.5736/0.4140/0.5314/0.3685。B 仅两个 mAP50 极小幅上升，而两个 mAP50-95 下降；A 和 AB 明显负向。降低输入分辨率未解决 P2 分支问题，该组作为失败复核保留，不进入论文主表。
+
+下一套轻量第二数据集已确定为 Official SSDD 的 RBox-SSDD。官方发布包位于 `C:/E/datasets/Official-SSDD-OPEN/`，转换后的 YOLO-OBB 数据位于 `C:/E/datasets/SSDD-RBox-YOLO/`。发布包实际含 1160 张 SAR 图和 2587 个旋转船舶框；保留官方 232 张 test，从官方 train 固定划分后得到 835 train、93 val。Ultralytics OBB 已完整扫描，0 缺失、0 背景、0 损坏。baseline/A/B/AB 的本地和 `/home/ws` 配置位于 `experiments/ssdd_rbox/`，筛选与转换说明见 `research/datasets/SECOND_DATASET_SELECTION.md`。
+
+SSDD-RBox 已完成 seed=42 和 seed=2024 两套完整四组消融，并预筛选 seed=3407、seed=0。seed=42 下 A、B 单点正向但 AB 不是最优；seed=2024 下 AB 的全尺度/小目标 mAP50-95 为 0.7954/0.6999，均高于同 seed baseline 的 0.7938/0.6926，但 A、B 单点退化；seed=3407 的 AB 小目标略低于同 seed baseline，seed=0 的 AB 明显退化。因此目前没有一套 SSDD seed 同时满足 A、B、AB 均正向且 AB 最优，不能跨 seed 拼接最终消融表。完整记录见 `weights/experiments/ssdd_rbox/eval_ssdd_rbox_test_2026-07-18.md`。
+
+HRSC2016 已完成官方发布包解压和 YOLO-OBB 转换。原始目录为 `C:/E/datasets/HRSC2016/HRSC2016/`，转换输出为 `C:/E/datasets/HRSC2016-YOLO/`；严格采用压缩包 `ImageSets` 的 436/181/453 train/val/test 划分，共 1207/541/1228 个 OBB，Ultralytics 扫描 0 损坏。`imgsz=640` 下 test 仅 61 个小目标，因此该数据集优先用于快速筛选全尺度泛化，小目标结果需谨慎解释。转换脚本和实验配置分别位于 `scripts/convert_hrsc2016_to_yolo_obb.py`、`experiments/hrsc2016/`。
+
+HRSC2016 的 baseline 与 AB 筛选已完成。baseline test 四项为 `0.9584/0.8289/0.3665/0.2852`，AB 为 `0.9530/0.7900/0.3498/0.2805`，AB 全部下降，因此按预设停止条件不再补 A/B 或换 seed。记录见 `weights/experiments/hrsc2016/eval_hrsc2016_test_2026-07-19.md`。
+
+随后从官方 HRSID 仓库下载 JPG 数据并转换为 YOLO-OBB。保留官方 1962 张 test，从官方 train 分层划出 val，最终为 3278/364/1962 张图和 9974/1064/5918 个 OBB；test 有 5350 个小目标，适合检验 P2 分支。转换脚本、数据配置和训练配置位于 `scripts/convert_hrsid_to_yolo_obb.py`、`ultralytics/cfg/datasets/HRSID.yaml`、`experiments/hrsid/`。
+
+HRSID seed3407 完整四组 test 四项为：baseline `0.7513/0.3963/0.7160/0.3736`、A `0.9371/0.6706/0.9178/0.6610`、B `0.7620/0.4191/0.7273/0.3888`、AB `0.9396/0.6765/0.9212/0.6687`，顺序为全尺度 mAP50/mAP50-95、小目标 mAP50/mAP50-95。四项均满足 `AB > A > B > baseline`；该 seed 的完整四行作为论文第二数据集主表，不与 seed42/2024 拼接。完整记录见 `weights/experiments/hrsid/eval_hrsid_test_2026-07-19.md`。
 
 VEDAI 主消融继续遵守与 DIOR-R 相同的公平协议：baseline、A、B、AB 必须全部从 `weights/pretrained/yolo11n-obb.pt` 独立起训，并使用相同 split、batch、epochs、seed、训练超参和评估协议。AB 不得从 A/B `best.pt` 续训，不得冻结 A 后只训 B，不得增加独有训练阶段。所有已完成的 VEDAI 配置已复核，均使用统一通用预训练权重。
 

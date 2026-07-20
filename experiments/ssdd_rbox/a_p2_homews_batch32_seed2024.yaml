@@ -1,0 +1,17 @@
+status: ready
+variant: A_batch32_seed2024
+description: Fixed-batch A-P2 on Official RBox-SSDD for /home/ws with seed 2024.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-a-p2.yaml
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: ultralytics/cfg/datasets/SSDD-RBox-homews.yaml
+name: ssdd_rbox_A_p2_s2024_b32
+epochs: 100
+batch: 32
+imgsz: 640
+seed: 2024
+device: 1
+workers: 8
+cache: ram
+cos_lr: true
+amp: true
+deterministic: true

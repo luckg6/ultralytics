@@ -1,0 +1,17 @@
+status: ready
+variant: B_pki_lite_batch32
+description: Fixed-batch B-PKI-Lite on HRSID for /home/ws.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-b-pki-lite.yaml
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: ultralytics/cfg/datasets/HRSID-homews.yaml
+name: hrsid_B_pki_lite_b32
+epochs: 100
+batch: 32
+imgsz: 640
+seed: 42
+device: 1
+workers: 8
+cache: ram
+cos_lr: true
+amp: true
+deterministic: true

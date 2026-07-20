@@ -1,0 +1,17 @@
+status: ready
+variant: AB_batch32_seed0
+description: Fixed-batch A-P2 plus B-PKI-Lite on Official RBox-SSDD for /home/ws with seed 0.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-ab-p2-pki-lite.yaml
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: ultralytics/cfg/datasets/SSDD-RBox-homews.yaml
+name: ssdd_rbox_AB_p2_pki_lite_s0_b32
+epochs: 100
+batch: 32
+imgsz: 640
+seed: 0
+device: 1
+workers: 8
+cache: ram
+cos_lr: true
+amp: true
+deterministic: true

@@ -1,0 +1,10 @@
+# Official HRSID masks converted to Ultralytics YOLO-OBB minimum-area rectangles.
+path: C:/E/datasets/HRSID-YOLO
+
+train: images/train
+val: images/val
+test: images/test
+
+nc: 1
+names:
+  0: ship
