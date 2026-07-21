@@ -11,7 +11,22 @@
 - 第二数据集：HRSID。seed3407 已完成 baseline/A/B/AB 四组，并实现四项一致的 `AB > A > B > baseline`；UCAS-AOD、VEDAI、SSDD-RBox、HRSC2016 保留为筛选记录。
 - 论文实验目标：设计 3 个轻量、可解释、可消融的模型改进点，并验证单独改进和组合改进的效果。
 
-## 当前 Baseline
+## 论文主实验：DIOR-R 官方划分
+
+EI 小论文的第一个数据集现统一采用 DIOR 官方 `5862/5863/11738` train/val/test 划分。baseline、A-P2、B-PKI-Lite 和 A+B-PKI-Lite 四组已经完成，AB 在全尺度和小目标四项指标上均为最高。
+
+| 模型 | Params | GFLOPs | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
+|---|---:|---:|---:|---:|---:|---:|
+| Baseline | 2,657,623 | 6.6 | 0.7111 | 0.5431 | 0.2732 | 0.1796 |
+| A-P2 | 2,698,340 | 10.5 | 0.7160 | 0.5394 | 0.2843 | 0.1980 |
+| B-PKI-Lite | 2,699,673 | 6.8 | 0.7111 | 0.5424 | 0.2768 | 0.1823 |
+| A+B-PKI-Lite | **2,740,390** | **10.7** | **0.7225** | **0.5455** | **0.2920** | **0.2042** |
+
+DIOR-R 论文传统上多以全数据集 AP50 为主要指标，本项目也以全尺度 mAP50 作为主报告指标，同时保留 mAP50-95 作为更严格的补充指标。外部方法的 AP50 只能放入标注 `Reported under authors' settings` 的参考表：本项目与 MMRotate 工作在 train/trainval、48 张 test 过滤以及 ProbIoU/几何旋转 IoU 上仍有差异，不能据此宣称严格领先。小目标结果使用本项目 `640×640` 输入空间内 OBB 面积 `<1024 px²` 的附加协议，不等同于 DIOR-R 官方指标。
+
+官方划分数据、配置和完整结果见 `experiments/dior_official/`。YOLOv8n-OBB 与 YOLO26n-OBB 的同协议复现配置位于 `experiments/dior_official/comparisons/`，本地和 `/home/ws` 均可直接训练。原 `18770/2346/2347` 的 8:1:1 四组结果不再作为论文第一数据集主表，改作不同数据划分下的附加鲁棒性验证。
+
+## 历史 8:1:1 鲁棒性验证 Baseline
 
 DIOR-R baseline 使用以下流程：
 
@@ -47,9 +62,9 @@ python scripts/train_obb.py --config experiments/dior/baseline.yaml
 - mAP50：0.849
 - mAP50-95：0.670
 
-## 当前 DIOR-R 阶段结果
+## 历史 8:1:1 鲁棒性验证结果
 
-A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、C-GRA-Lite、C-Chol-Lite、B-PKI-Lite、A+B-PKI-Lite、A+B-PKI-Lite+C-Plus 和 A+B-PKI-Lite+C-Chol-Lite 已完成 `test` split 评估。A-P2 相对 baseline 有稳定提升，尤其是小目标指标提升明显；B-LSK 当前单独实验未带来提升；C-Chol-Lite 是当前最好的已完成 C 单点；新版 B-PKI-Lite 轻微正向；A+B-PKI-Lite 进一步超过 A-P2，仍是当前 DIOR-R test 上的主结果候选。A+B-PKI-Lite+C-Chol-Lite 相比 baseline 明显提升，但 mAP50-95 和小目标指标仍低于 A+B-PKI-Lite。新的 A+B-PKI-Lite+C-SET-HBS 已完成代码、论文归档和训练配置，目标是通过训练期背景平滑辅助监督同时超过 AB 的全尺度与小目标指标，当前待训练验证。
+以下结果使用第三方 YOLODIOR-R 的 `18770/2346/2347` 划分，现定位为不同数据划分下的附加鲁棒性验证和学位论文探索记录，不再替代官方划分主表。A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、C-GRA-Lite、C-Chol-Lite、B-PKI-Lite、A+B-PKI-Lite、A+B-PKI-Lite+C-Plus 和 A+B-PKI-Lite+C-Chol-Lite 已完成 `test` split 评估；其中 A+B-PKI-Lite 仍是该划分的最佳主线组合。
 
 | 模型 | 权重路径 | Params | GFLOPs | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
 |---|---|---:|---:|---:|---:|---:|---:|

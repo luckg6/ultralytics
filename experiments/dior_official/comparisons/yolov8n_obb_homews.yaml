@@ -1,0 +1,17 @@
+status: ready
+variant: YOLOv8n-OBB
+description: Homews YOLOv8n-OBB comparison on the official DIOR-R split.
+model: ultralytics/cfg/models/v8/yolov8-obb.yaml
+pretrained: weights/pretrained/yolov8n-obb.pt
+data: ultralytics/cfg/datasets/DIOR-official-homews.yaml
+name: dior_official_compare_yolov8n_obb
+epochs: 100
+batch: -1
+imgsz: 640
+seed: 42
+device: 1
+workers: 8
+cache: ram
+cos_lr: true
+amp: true
+deterministic: true

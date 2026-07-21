@@ -10,7 +10,7 @@
 - 该文件统一记录会议与模板约束、论文论点、术语、DIOR-R/HRSID 主表、seed 报告边界、缺失证据、图表计划、AI 披露和 LaTeX 工作流。
 - 写作说明与实验原始输出冲突时，以可复现日志和评估输出为准，并先修正说明文件；不得为了论文叙事修改或跨 seed 拼接实验结果。
 
-## 基线设定
+## 历史 8:1:1 基线设定
 
 - 任务：遥感图像旋转框检测，`task=obb`。
 - 当前统一训练入口：`scripts/train_obb.py`。
@@ -42,15 +42,19 @@
   - 小目标 mAP50-95：0.3470
 - 当前 DIOR-R baseline 参数量：2,657,623。
 
-## DIOR-R 官方划分复核线
+## DIOR-R 官方划分论文主实验
 
-- 原 `C:/E/datasets/YOLODIOR-R/` 及其 8:1:1 实验结果保留，不覆盖、不删除。
+- 官方划分 DIOR-R 已确定为 EI 小论文第一个数据集的主实验；原 `C:/E/datasets/YOLODIOR-R/` 及其 8:1:1 实验结果保留为不同划分下的附加鲁棒性验证，不覆盖、不删除。
 - 新数据目录：`C:/E/datasets/YOLODIOR-R-official/`；服务器目录固定为 `/home/ws/datasets/YOLODIOR-R-official/`。
 - 采用官方顺序划分：train `00001-05862`（5,862 张）、val `05863-11725`（5,863 张）、test `11726-23463`（11,738 张）。三份列表已通过公开 ImageSets 文件的 Git blob SHA-1 校验。
 - 数据重排脚本：`scripts/prepare_dior_r_official_split.py`；详细说明：`experiments/dior_official/README.md`。
 - 本地和 `/home/ws` 的 baseline、A-P2、B-PKI-Lite、A+B-PKI-Lite 配置均位于 `experiments/dior_official/`。
+- YOLOv8n-OBB 与 YOLO26n-OBB 的同协议对比配置位于 `experiments/dior_official/comparisons/`；不得使用旧 `experiments/dior/comparisons/` 的 8:1:1 配置替代。
 - 本地统一 `batch=4`、`cache=disk`、`device=0`；`/home/ws` 统一 `batch=-1`、`cache=ram`、`device=1`；其余主超参数保持 `epochs=100`、`imgsz=640`、`seed=42`。
 - 训练期间只使用 val 选择 `best.pt`，最终 test 结果用于论文报告；不得与旧 8:1:1 协议结果混为同一套实验。
+- 2026-07-21 四组已完成。test 四项依次为全尺度 mAP50、全尺度 mAP50-95、小目标 mAP50、小目标 mAP50-95：baseline 0.7111/0.5431/0.2732/0.1796，A 0.7160/0.5394/0.2843/0.1980，B 0.7111/0.5424/0.2768/0.1823，AB 0.7225/0.5455/0.2920/0.2042。A、B 均改善小目标，AB 四项均为最高。
+- 当前转换标签存在 140 张越界图像（train/val/test 为 62/30/48），Ultralytics 会整图忽略。四组使用同一过滤规则；用户决定保留现有结果、不重新训练，外部比较时必须披露。详细记录见 `experiments/dior_official/eval_baseline_ab_test_2026-07-21.md`。
+- DIOR-R 以全尺度 mAP50 为主报告口径，mAP50-95 同时保留为更严格补充；小目标 mAP 是本项目自定义面积协议下的附加分析。外部论文 AP50 只能标为作者各自协议下的参考结果：本项目使用 train 而不少工作使用 trainval，本项目过滤 48 张 test 图像，且 Ultralytics 使用 ProbIoU 而 MMRotate 系工作通常使用几何旋转 IoU，不能据此直接宣称领先。
 
 ## 当前 A-P2 实验结果
 
@@ -803,10 +807,10 @@ A + B + C-SET-HBS
 
 写论文表格前，要单独整理一份实验日志，记录每个实验的模型路径、训练参数、最终指标和验证命令。
 
-## DIOR-R 同划分外部轻量模型对比
+## 历史 8:1:1 外部轻量模型对比计划
 
-- 不直接评估其他论文在官方 DIOR-R 划分上训练的 checkpoint，因为其训练图像可能与本项目测试集重叠。
-- 当前入选 YOLOv8n-OBB 和 YOLO26n-OBB，均使用官方 OBB 预训练权重，并在本项目 DIOR-R train/val/test 上重新训练和测试。
+- 本节配置基于旧 8:1:1 划分，现已归档，不进入 EI 小论文官方划分主表。
+- 如需补 YOLOv8n-OBB 和 YOLO26n-OBB，必须另建官方划分配置，并从各自官方 OBB 预训练权重独立训练。
 - 配置与统一命令见 `experiments/dior/comparisons/README.md`。
 - 本地配置固定 `batch=4`、`cache=disk`；`/home/ws` 配置固定 `device=1`、`batch=-1`、`cache=ram`。
 - YOLO12n-OBB 因缺少官方 OBB 预训练权重，暂不进入主对比表。

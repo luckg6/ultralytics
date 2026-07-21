@@ -208,4 +208,7 @@ calibration_*.npy
 
 # Training logs
 args.yaml
+
+# Personal paper-writing reference notes (not for public remotes)
+paper/
 results.csv

@@ -10,9 +10,24 @@
 - `status: planned` 表示只登记计划，还没有可运行结构。
 - `status: ready` 表示可以直接用统一训练脚本运行。
 
-## 当前 DIOR-R 统一超参
+## DIOR-R 官方划分论文主实验
 
-后续 baseline/A/B/C/AB/ABC 主实验统一使用：
+论文第一数据集的权威入口为 `experiments/dior_official/`。该目录采用官方 `5862/5863/11738` 划分，四组结果为：
+
+| 实验 | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
+|---|---:|---:|---:|---:|
+| Baseline | 0.7111 | 0.5431 | 0.2732 | 0.1796 |
+| A-P2 | 0.7160 | 0.5394 | 0.2843 | 0.1980 |
+| B-PKI-Lite | 0.7111 | 0.5424 | 0.2768 | 0.1823 |
+| A+B-PKI-Lite | **0.7225** | **0.5455** | **0.2920** | **0.2042** |
+
+AB 四项最高。全尺度 mAP50 是论文主报告指标，mAP50-95 是严格补充，小目标 mAP 属于本项目附加尺度分析。外部论文 AP50 只能作为作者各自协议下的参考值，不能忽略 train/trainval、标签过滤和旋转 IoU 实现差异后直接宣称领先。
+
+同协议的 YOLOv8n-OBB、YOLO26n-OBB 对比配置位于 `experiments/dior_official/comparisons/`。服务器版本遵循 `device=1`、`batch=-1`、`cache=ram`，运行时不要额外指定会覆盖数据路径的通用 `--env homews`。
+
+## 历史 8:1:1 DIOR-R 统一超参
+
+旧 `18770/2346/2347` 划分的 baseline/A/B/C/AB/ABC 实验统一使用：
 
 ```text
 epochs: 100
@@ -26,9 +41,9 @@ cos_lr: true
 
 说明：最初 baseline 和 A-P2 使用过更大的 batch，但本机 RTX 4060 Laptop 8GB 在 A-P2 上频繁 OOM，并触发 CPU fallback；显存占用仍偏高。因此后续正式对比实验统一改为 `batch=4`，保证所有结构变体公平比较。
 
-## 当前 DIOR-R 实验进展
+## 历史 8:1:1 DIOR-R 实验进展
 
-Baseline、A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、C-GRA-Lite、C-Chol-Lite、B-PKI-Lite、A+B-PKI-Lite、A+B-PKI-Lite+C-Plus 和 A+B-PKI-Lite+C-Chol-Lite 已完成 `test` split 评估。A+B-PKI-Lite 是当前最佳组合；A+B-PKI-Lite+C-Chol-Lite 没有超过 AB。新的 A+B-PKI-Lite+C-SET-HBS 已完成代码和一键训练配置，当前待训练，目标是同时超过 AB 的全尺度和小目标指标。
+以下为旧 8:1:1 划分的鲁棒性验证与探索结果。Baseline、A-P2、B-LSK、C-Dynamic、C-Dynamic-Plus、C-GRA-Lite、C-Chol-Lite、B-PKI-Lite、A+B-PKI-Lite、A+B-PKI-Lite+C-Plus 和 A+B-PKI-Lite+C-Chol-Lite 已完成 `test` split 评估；A+B-PKI-Lite 是该划分的最佳主线组合。
 
 | 实验 | 配置 | 权重 | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 | 状态 |
 |---|---|---|---:|---:|---:|---:|---|

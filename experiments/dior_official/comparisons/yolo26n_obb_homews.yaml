@@ -1,0 +1,17 @@
+status: ready
+variant: YOLO26n-OBB
+description: Homews YOLO26n-OBB comparison on the official DIOR-R split.
+model: ultralytics/cfg/models/26/yolo26-obb.yaml
+pretrained: weights/pretrained/yolo26n-obb.pt
+data: ultralytics/cfg/datasets/DIOR-official-homews.yaml
+name: dior_official_compare_yolo26n_obb
+epochs: 100
+batch: -1
+imgsz: 640
+seed: 42
+device: 1
+workers: 8
+cache: ram
+cos_lr: true
+amp: true
+deterministic: true
