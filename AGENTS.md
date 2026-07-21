@@ -42,6 +42,16 @@
   - 小目标 mAP50-95：0.3470
 - 当前 DIOR-R baseline 参数量：2,657,623。
 
+## DIOR-R 官方划分复核线
+
+- 原 `C:/E/datasets/YOLODIOR-R/` 及其 8:1:1 实验结果保留，不覆盖、不删除。
+- 新数据目录：`C:/E/datasets/YOLODIOR-R-official/`；服务器目录固定为 `/home/ws/datasets/YOLODIOR-R-official/`。
+- 采用官方顺序划分：train `00001-05862`（5,862 张）、val `05863-11725`（5,863 张）、test `11726-23463`（11,738 张）。三份列表已通过公开 ImageSets 文件的 Git blob SHA-1 校验。
+- 数据重排脚本：`scripts/prepare_dior_r_official_split.py`；详细说明：`experiments/dior_official/README.md`。
+- 本地和 `/home/ws` 的 baseline、A-P2、B-PKI-Lite、A+B-PKI-Lite 配置均位于 `experiments/dior_official/`。
+- 本地统一 `batch=4`、`cache=disk`、`device=0`；`/home/ws` 统一 `batch=-1`、`cache=ram`、`device=1`；其余主超参数保持 `epochs=100`、`imgsz=640`、`seed=42`。
+- 训练期间只使用 val 选择 `best.pt`，最终 test 结果用于论文报告；不得与旧 8:1:1 协议结果混为同一套实验。
+
 ## 当前 A-P2 实验结果
 
 - 创新点 A 已完成第一版实验，结构为 P2/4 OBB 检测分支。

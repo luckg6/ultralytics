@@ -1,0 +1,17 @@
+status: ready
+variant: baseline
+description: YOLO11n-OBB baseline on the official DIOR-R split.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-baseline.yaml
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: ultralytics/cfg/datasets/DIOR-official.yaml
+name: dior_official_baseline_yolo11n_obb
+epochs: 100
+batch: 4
+imgsz: 640
+seed: 42
+device: 0
+workers: 4
+cache: disk
+cos_lr: true
+amp: true
+deterministic: true

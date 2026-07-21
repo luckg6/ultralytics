@@ -89,3 +89,34 @@ YOSDet 明确说明：从 HRSID 原生实例分割掩码拟合 minimum-area rota
 | A-P2 + B-PKI-Lite | 本文 | 2,740,390 | 10.7 | 0 | 已完成 |
 
 YOLOv8n-OBB 用作经典 nano OBB 参照，YOLO26n-OBB 用作近期 nano OBB 参照。YOLO12n-OBB 不进入主表，因为官方未提供 OBB 预训练权重；无可核验官方源码的方法也不按论文描述自行复刻。训练完成后统一报告全尺度与小目标的 mAP50、mAP50-95，并保留 Params/GFLOPs。
+
+## 7. 与本项目划分接近的可引用结果
+
+### 7.1 精确同划分检索结论
+
+本项目数据来自 2025 年发布的 Kaggle 转换包 *DIOR-R Dataset (YOLOv11-OBB Format)*，固定划分为 18770/2346/2347。截至 2026-07-20，未检索到同行评审论文明确使用这组精确数量；该数据页也没有公开 notebook、benchmark 结果或配套 checkpoint。因此暂时没有可以不经重训、又能声称“完全相同测试集”的外部方法。
+
+### 7.2 推荐采用的近协议论文
+
+Liu et al. 的 MS-YOLOv11（Sensors 2025，DOI `10.3390/s25196008`）与本项目最接近：使用 Ultralytics YOLO-OBB、20 类 DIOR-R、640 输入，模型约 2.87M 参数。论文采用 23190 张图像的 60/20/20 划分、batch 16、300 epochs，因而只能作为作者协议报告值。
+
+| 方法 | Params | mAP50 (%) | mAP50-95 (%) | 数据来源 |
+|---|---:|---:|---:|---|
+| YOLOv8-OBB | 未报告 | 84.96 | 未报告 | MS-YOLOv11 论文复测 |
+| YOLO11-OBB | 2,802,647 | 85.75 | 66.66 | MS-YOLOv11 论文复测 |
+| MS-YOLOv11 | 2,865,383 | 88.33 | 70.90 | 原论文结果 |
+| 本项目 YOLO11n-OBB | 2,657,623 | 85.88 | 68.74 | 本项目 80/10/10 test |
+| 本项目 A-P2 + B-PKI-Lite | 2,740,390 | 88.59 | 71.98 | 本项目 80/10/10 test |
+
+两套协议下的 YOLO11 baseline mAP50 仅相差 0.13 个百分点，说明结果量级接近；但这只是支持将其作为近协议参考的旁证，不证明测试集等价。正文可设一张带 `Reported under authors' settings` 脚注的补充表，不应据此宣称严格超过 MS-YOLOv11。
+
+该文报告的 `mAP(small)=84.21` 不进入对比：虽然其文字定义也是面积小于 32x32，但数值与本项目小目标结果差异异常大，且没有公开评估实现可核验。小目标指标仅比较本项目统一脚本得到的 baseline/A/B/AB。
+
+来源：[论文全文](https://www.mdpi.com/1424-8220/25/19/6008)；[本项目所用 Kaggle 数据页](https://www.kaggle.com/datasets/redzapdos123/dior-r-dataset-yolov11-obb-format)。
+
+### 7.3 最省训练时间的最终方案
+
+1. 本项目仅补跑 YOLOv8n-OBB 与 YOLO26n-OBB，得到完全同划分结果。
+2. 主表放 baseline、YOLOv8n-OBB、YOLO26n-OBB、A、B、AB，全部是本项目同协议结果。
+3. 另设一张很短的作者报告值表，放 MS-YOLOv11 论文中的 YOLOv8-OBB、YOLO11-OBB 和 MS-YOLOv11，并与本项目 AB 并列但明确分组和脚注。
+4. 不再重训参数量较大的 Oriented R-CNN、ReDiffDet、PKINet-S 等模型。

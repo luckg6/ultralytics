@@ -1,0 +1,17 @@
+status: ready
+variant: A-P2
+description: A-P2 on the official DIOR-R split.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-a-p2.yaml
+pretrained: weights/pretrained/yolo11n-obb.pt
+data: ultralytics/cfg/datasets/DIOR-official.yaml
+name: dior_official_A_p2
+epochs: 100
+batch: 4
+imgsz: 640
+seed: 42
+device: 0
+workers: 4
+cache: disk
+cos_lr: true
+amp: true
+deterministic: true

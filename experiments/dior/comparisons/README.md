@@ -28,6 +28,24 @@
 
 YOLO12n-OBB 暂不进入主对比：其结构参数量接近，但官方没有发布 OBB 预训练权重。若从随机初始化或检测权重训练，会与其余方法的 DOTA OBB 初始化不一致。YOSDet 等论文若没有可核验的官方源码，也不根据论文描述自行复刻，以免比较对象偏离原方法。
 
+## 可直接引用的近协议结果
+
+截至 2026-07-20，尚未检索到同行评审论文明确使用与本项目完全相同的 Kaggle `18770/2346/2347` 划分。该转换数据包由 Mridankan Mandal 于 2025 年发布，公开页面目前也没有配套 benchmark 代码或论文结果。
+
+目前最接近的是 Sensors 2025 的 MS-YOLOv11：同为 Ultralytics YOLO-OBB、20 类 DIOR-R、`imgsz=640` 和约 2.8M 参数，但采用 23190 张图像的 60/20/20 随机划分、batch 16、300 epochs。其 baseline 与本项目 baseline 的结果接近，因此可作为“作者协议报告值”补充，而不能标成完全同协议复现。
+
+| 方法 | Params | mAP50 | mAP50-95 | 协议 |
+|---|---:|---:|---:|---|
+| YOLOv8-OBB | 未报告 | 84.96 | 未报告 | MS-YOLOv11 论文协议 |
+| YOLO11-OBB | 2,802,647 | 85.75 | 66.66 | MS-YOLOv11 论文协议 |
+| MS-YOLOv11 | 2,865,383 | 88.33 | 70.90 | MS-YOLOv11 论文协议 |
+| YOLO11n-OBB baseline | 2,657,623 | 85.88 | 68.74 | 本项目划分，seed 42 |
+| A-P2 + B-PKI-Lite | 2,740,390 | 88.59 | 71.98 | 本项目划分，seed 42 |
+
+论文来源：Liu et al., *MS-YOLOv11: A Wavelet-Enhanced Multi-Scale Network for Small Object Detection in Remote Sensing Images*, Sensors 2025, 25(19), 6008, DOI `10.3390/s25196008`，https://www.mdpi.com/1424-8220/25/19/6008 。
+
+注意：该论文还报告 `mAP(small)=84.21`，虽文字上采用面积小于 32x32 的定义，但其结果与本项目小目标评估差异异常大，且未公开可核验评估代码，因此不把该数值与本项目小目标 mAP50 直接并列。论文正文建议只引用其全尺度 mAP50/mAP50-95。
+
 ## 一键训练
 
 本地 Windows：
@@ -57,3 +75,5 @@ conda run -n yololuck python scripts/evaluate_obb.py --model runs/obb/dior_compa
 ```
 
 最终表格同时报告 Params、GFLOPs、全尺度 mAP50/mAP50-95 和项目既定协议下的小目标 mAP50/mAP50-95。训练完成前不预填结果。
+
+时间成本受限时，只需在本项目划分上补跑 YOLOv8n-OBB 和 YOLO26n-OBB；MS-YOLOv11 使用上表作者报告值并加协议脚注，不再自行复现。
