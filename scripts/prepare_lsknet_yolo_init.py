@@ -59,9 +59,17 @@ def tensor_params(state_dict: dict[str, torch.Tensor]) -> int:
     return sum(v.numel() for v in state_dict.values() if torch.is_tensor(v))
 
 
+def trusted_torch_load(path: Path) -> dict:
+    """Load trusted local checkpoints across PyTorch 2.1-2.6+ defaults."""
+    try:
+        return torch.load(path, map_location="cpu", weights_only=False)
+    except TypeError:
+        return torch.load(path, map_location="cpu")
+
+
 def load_lsk_backbone(target: dict[str, torch.Tensor], dota_path: Path) -> tuple[dict[str, torch.Tensor], list[str], list[str]]:
     """Map official DOTA ``backbone.*`` keys into Ultralytics ``model.0.*`` keys."""
-    ckpt = torch.load(dota_path, map_location="cpu")
+    ckpt = trusted_torch_load(dota_path)
     source = ckpt.get("state_dict", ckpt)
     mapped, skipped = {}, []
     for key, value in source.items():
@@ -77,7 +85,7 @@ def load_lsk_backbone(target: dict[str, torch.Tensor], dota_path: Path) -> tuple
 
 def load_yolo_neck_head(target: dict[str, torch.Tensor], yolo_path: Path) -> tuple[dict[str, torch.Tensor], list[str], list[str]]:
     """Map compatible YOLO11n-OBB neck/head layers into the LSKNet baseline."""
-    ckpt = torch.load(yolo_path, map_location="cpu")
+    ckpt = trusted_torch_load(yolo_path)
     source_model = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
     source = source_model.float().state_dict()
     mapped, skipped, considered = {}, [], []

@@ -1,6 +1,6 @@
 # LSKNet-T Baseline Initialization Report
 
-- Generated: `2026-07-28T16:04:27`
+- Generated: `2026-07-28T16:33:29`
 - Model YAML: `ultralytics\cfg\models\11\remote_obb\yolo11n-obb-lsknet-t-baseline.yaml`
 - Output checkpoint: `weights\pretrained\lsknet\yolo11n_obb_lsknet_t_hybrid_init.pt`
 
