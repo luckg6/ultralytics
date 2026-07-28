@@ -2,6 +2,8 @@
 
 评估日期：2026-07-21
 
+> 整理说明：本文件保留 DIOR-R official 首轮四组 test 评估原始记录。当前论文已经补充三 seed 稳定性，最终报告口径以 `paper/ippr2026/main.pdf`、`README.md` 和 `experiments/dior_official/README.md` 为准。本文件中的 seed42/自动 batch 说明不再作为复现论文表格的完整协议。
+
 ## 实验对象
 
 | 模型 | 权重 |

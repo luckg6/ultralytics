@@ -1,85 +1,51 @@
-# DIOR-R 官方划分复现实验
+# DIOR-R 官方划分主实验
 
-本目录用于在 DIOR/DIOR-R 的官方数据划分上重新训练 baseline、A-P2、B-PKI-Lite 和 A+B-PKI-Lite。原有 `C:/E/datasets/YOLODIOR-R/` 及其 8:1:1 实验结果不覆盖、不删除。
+本目录是 IPPR 2026 小论文的第一个主数据集实验。当前结果以 [paper/ippr2026/main.pdf](../../paper/ippr2026/main.pdf) 为准。
 
-## 数据划分
+## 数据集协议
 
-| 子集 | 图像编号 | 图像数 | 用途 |
-|---|---:|---:|---|
-| train | `00001`-`05862` | 5,862 | 参数训练 |
-| val | `05863`-`11725` | 5,863 | 选择 `best.pt` |
-| test | `11726`-`23463` | 11,738 | 最终一次性报告 |
+- 原始数据：DIOR-R，23,463 张图，20 类。
+- 本地目录：`C:/E/datasets/YOLODIOR-R-official/`。
+- 服务器目录：`/home/ws/datasets/YOLODIOR-R-official/`。
+- 划分：按官方 image order 使用 `00001-05862` train、`05863-11725` val、`11726-23463` test。
+- 原始数量：train/val/test = `5862/5863/11738`。
+- 有效数量：train/val/test = `5800/5833/11690`。第三方 Ultralytics 格式转换中有 140 张图片存在越界标注并被整图忽略，四组实验使用同一过滤规则。
+- 训练：100 epochs，`imgsz=640`，batch 32，RAM cache，3 seeds。
+- 小目标口径：`wh < 1024 px^2`，仅用于诊断分析。
 
-三份列表与公开 `ImageSets/Main/{train,val,test}.txt` 的 Git blob SHA-1 完全一致。来源为 Hugging Face 数据集 `Qingyun/lmmrotate-sft-data` 中按 MMRotate 官方说明整理的 DIOR 文件；列表内容也与公开的 DIOR trainval/test 图像归档边界一致。
+转换脚本为 `scripts/prepare_dior_r_official_split.py`。早期 Kaggle 8:1:1 划分保留在 `experiments/dior/`，不能与本目录结果混为同一协议。
 
-本地数据已经由以下命令从现有 YOLO OBB 标注重排生成：
+## 主消融结果
 
-```powershell
-python scripts/prepare_dior_r_official_split.py `
-  --source C:/E/datasets/YOLODIOR-R `
-  --output C:/E/datasets/YOLODIOR-R-official `
-  --mode hardlink
-```
+精度为百分数。论文 Table IV 报告每个 variant 的最佳单次结果，Table V 报告三 seed 均值和标准差。
 
-`hardlink` 只用于节省本机磁盘；压缩或复制到服务器后仍是普通独立文件。
+| Variant | Params (M) | GFLOPs | All mAP50 | All mAP50:95 | Small mAP50 | Small mAP50:95 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Baseline | 2.658 | 6.6 | 71.11 | 54.31 | 27.32 | 17.96 |
+| Baseline + A | 2.698 | 10.5 | 71.60 | 53.94 | 28.43 | 19.80 |
+| Baseline + B | 2.700 | 6.8 | 71.11 | 54.24 | 27.68 | 18.23 |
+| Baseline + A + B | 2.740 | 10.7 | **72.25** | **54.55** | **29.20** | **20.42** |
 
-## 服务器位置
+| Variant | Seeds | All mAP50 | All mAP50:95 | Small mAP50 | Small mAP50:95 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Baseline | 3 | 71.02 ± 0.10 | 54.19 ± 0.12 | 27.17 ± 0.16 | 17.79 ± 0.17 |
+| Baseline + A | 3 | 71.47 ± 0.13 | 53.83 ± 0.12 | 28.27 ± 0.16 | 19.61 ± 0.19 |
+| Baseline + B | 3 | 71.03 ± 0.08 | 54.15 ± 0.09 | 27.55 ± 0.13 | 18.10 ± 0.14 |
+| Baseline + A + B | 3 | **72.12 ± 0.14** | **54.43 ± 0.12** | **29.01 ± 0.19** | **20.24 ± 0.18** |
 
-把完整数据目录放到：
+## 同协议参照模型
 
-```text
-/home/ws/datasets/YOLODIOR-R-official/
-├── train/images, train/labels
-├── val/images, val/labels
-├── test/images, test/labels
-└── split_manifest.json
-```
+| Model | Params | GFLOPs | mAP50 | mAP50:95 |
+| --- | ---: | ---: | ---: | ---: |
+| YOLOv8n-OBB | 3.081M | 8.4 | 70.38 | 53.39 |
+| YOLO11n-OBB | 2.658M | 6.6 | 71.11 | 54.31 |
+| YOLO26n-OBB | 2.450M | 5.5 | 69.79 | 54.35 |
+| FSPC-OBB | 2.740M | 10.7 | **72.25** | **54.55** |
 
-服务器数据 YAML 已固定指向该路径。服务器训练配置统一为 `device=1`、`batch=-1`、`cache=ram`；本地配置为 `device=0`、`batch=4`、`cache=disk`。四组实验均使用 `seed=42`、`epochs=100`、`imgsz=640`，并分别从同一个 `weights/pretrained/yolo11n-obb.pt` 初始化。
+详细记录见 `comparisons/README.md` 和 `comparisons/eval_yolov8n_yolo26n_test_2026-07-21.md`。
 
-## 训练命令
+## 目录说明
 
-建议先跑 baseline 和 AB；确认 AB 正向后，再补 A、B 两项消融。
-
-```bash
-python scripts/train_obb.py --config experiments/dior_official/baseline_homews.yaml
-python scripts/train_obb.py --config experiments/dior_official/ab_p2_pki_lite_homews.yaml
-python scripts/train_obb.py --config experiments/dior_official/a_p2_homews.yaml
-python scripts/train_obb.py --config experiments/dior_official/b_pki_lite_homews.yaml
-```
-
-本机运行时去掉文件名中的 `_homews` 即可。
-
-## 轻量模型对比
-
-YOLOv8n-OBB 与 YOLO26n-OBB 已建立官方划分专用配置，详见 `comparisons/README.md`。服务器训练命令：
-
-```bash
-python scripts/train_obb.py --config experiments/dior_official/comparisons/yolov8n_obb_homews.yaml
-python scripts/train_obb.py --config experiments/dior_official/comparisons/yolo26n_obb_homews.yaml
-```
-
-这两组与 baseline/A/B/AB 使用相同数据划分、epoch、输入尺寸和 seed，可在训练完成并统一 test 重评后进入同协议主对比表。不要添加 `--env homews`，因为通用环境文件的数据路径属于旧 8:1:1 数据集；本目录的 `_homews.yaml` 已包含正确的官方数据路径和 1 号 GPU 设置。
-
-## 最终评估
-
-训练过程中只根据 `val` 选择 `best.pt`。四组都确定后，再在 `test` 上统一运行：
-
-```bash
-python scripts/evaluate_obb.py --model runs/obb/dior_official_AB_p2_pki_lite/weights/best.pt --data ultralytics/cfg/datasets/DIOR-official-homews.yaml --split test --mode both --device 1
-```
-
-论文中应明确写作“采用 DIOR 官方 train/val/test 划分”，不可再把原 Kaggle 8:1:1 结果与官方协议论文放入同一张公平对比表。
-
-## 当前结果（2026-07-21）
-
-| 模型 | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
-|---|---:|---:|---:|---:|
-| baseline | 0.7111 | 0.5431 | 0.2732 | 0.1796 |
-| A-P2 | 0.7160 | 0.5394 | 0.2843 | 0.1980 |
-| B-PKI-Lite | 0.7111 | 0.5424 | 0.2768 | 0.1823 |
-| A+B-PKI-Lite | **0.7225** | **0.5455** | **0.2920** | **0.2042** |
-
-四组训练和官方 test 重评均已完成。A、B 单独使用时都提升两项小目标指标；AB 四项均超过 baseline、A 和 B，支持两个改进存在正向互补。详细记录见 `eval_baseline_ab_test_2026-07-21.md`。
-
-数据审计发现原 YOLO-OBB 转换标签中有 140 张图像含越界坐标，按官方 train/val/test 分别为 62/30/48 张，Ultralytics 会忽略整张图像。四组使用同一过滤规则，内部比较公平；按用户决定保留现有结果、不重新训练，论文中需披露该预处理规则。
+- 本目录保留训练 YAML 和评估说明。
+- `/home/ws` 未来新增训练默认可用 `device=1`、`batch=-1`、`cache=ram`，但复现论文表格时必须按上面的固定 batch 与三 seed 协议。
+- 旧 `experiments/dior/` 的 8:1:1 结果只可作为 alternate split robustness，不可直接横向比较。

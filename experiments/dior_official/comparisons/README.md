@@ -18,7 +18,7 @@ python scripts/train_obb.py --config experiments/dior_official/comparisons/yolov
 python scripts/train_obb.py --config experiments/dior_official/comparisons/yolo26n_obb_homews.yaml
 ```
 
-本地配置固定 `device=0`、`batch=4`、`cache=disk`；服务器配置固定 `device=1`、`batch=-1`、`cache=ram`。其余主超参数均为 `epochs=100`、`imgsz=640`、`seed=42`、`deterministic=true`。
+论文定稿表格使用 DIOR-R official 协议：`epochs=100`、`imgsz=640`、`batch=32`、`cache=RAM`，并按同一 test split 评估。后续若在 `/home/ws` 新增临时复核实验，仍可按项目默认使用 `device=1`、`batch=-1`、`cache=ram`，但论文复现口径以固定 batch 和三 seed 主协议为准。
 
 ## 最终评估
 
@@ -30,3 +30,14 @@ python scripts/evaluate_obb.py --model runs/obb/dior_official_compare_yolo26n_ob
 ```
 
 报告全尺度和小目标的 mAP50、mAP50-95，并从相同评估输出记录 Params/GFLOPs。不要把外部论文作者报告值当成这两组统一协议复现结果。
+
+## 已完成结果
+
+两组训练及官方 test 重评已于 2026-07-21 完成：
+
+| 模型 | Params | GFLOPs | 全尺度 mAP50 | 全尺度 mAP50-95 | 小目标 mAP50 | 小目标 mAP50-95 |
+|---|---:|---:|---:|---:|---:|---:|
+| YOLOv8n-OBB | 3,081,119 | 8.4 | 0.7038 | 0.5339 | 0.2662 | 0.1759 |
+| YOLO26n-OBB | 2,450,307 | 5.5 | 0.6979 | 0.5435 | 0.2581 | 0.1738 |
+
+完整六模型对比、差值和协议说明见 `eval_yolov8n_yolo26n_test_2026-07-21.md`。本文 AB 四项均超过这两个 nano OBB 参照。

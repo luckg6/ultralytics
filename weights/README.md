@@ -1,44 +1,45 @@
-# 权重文件管理
+# 权重与评估记录管理
 
-本目录统一管理本机论文实验权重，避免把 `.pt` 文件散落在仓库根目录、旧的 `modelPt/` 或临时 run 目录中。
+本目录用于本地整理预训练权重、实验权重和轻量评估记录。当前 git 已忽略 `.pt`、`.pth`、`.ckpt`、`.safetensors` 等大文件，远程仓库不再承担权重传输。
 
-从 2026-07-17 起，Git 不再跟踪 `.pt`、`.pth`、`.ckpt`、`.safetensors` 等权重文件，只保留目录中的 Markdown 评估记录。这样服务器拉取代码时不会继续下载新增实验权重；本地已有权重不会因取消 Git 跟踪而被删除。
+## 当前规则
 
-## 目录结构
+- 预训练权重本地放在 `weights/pretrained/`。
+- baseline 权重本地可放在 `weights/baselines/<dataset>/`。
+- A/B/C/AB/ABC 等实验权重本地可放在 `weights/experiments/<dataset>/<variant>/`。
+- Markdown 评估记录可以提交，用于追踪结果；权重文件不要提交。
+- 论文主结果以 `paper/ippr2026/main.pdf` 为准，早期权重目录中的旧 DIOR-R 8:1:1 记录只作为历史证据。
+
+## 目录示例
 
 ```text
 weights/
   pretrained/
     yolo11n-obb.pt
-    yolo11n.pt
-    yolo11s.pt
-    yolo11s-obb.pt
-    yolo26n.pt
   baselines/
     dior-r/
-      yolo11n-obb-dior-r-best.pt
-      yolo11n-obb-dior-r-last.pt
   experiments/
-    <dataset>/
-      <variant>/
-        best.pt
-        last.pt
+    dior/
+    hrsid/
+    ssdd_rbox/
+    vedai/
 ```
 
-## 使用原则
+## 新服务器准备预训练权重
 
-- 官方预训练权重统一放在 `weights/pretrained/`。
-- 数据集 baseline 权重统一放在 `weights/baselines/<dataset>/`。
-- A/B/C/AB/ABC 等结构变体训练出的关键权重，可以整理到 `weights/experiments/<dataset>/<variant>/` 本地归档，但不要提交到 Git。
-- 不要再把新的 `.pt` 文件直接放在仓库根目录。
-- 需要跨机器传输关键权重时，使用网盘、对象存储或单独的模型发布，不再通过代码仓库传输。
-
-## 服务器准备基础权重
-
-新服务器克隆仓库并安装环境后，在仓库根目录执行：
+安装好本仓库环境后，可以在仓库根目录执行：
 
 ```bash
-python -c "from pathlib import Path; from ultralytics import YOLO; YOLO('yolo11n-obb.pt'); Path('weights/pretrained').mkdir(parents=True, exist_ok=True); Path('yolo11n-obb.pt').replace('weights/pretrained/yolo11n-obb.pt')"
+python - <<'PY'
+from pathlib import Path
+from ultralytics import YOLO
+
+Path("weights/pretrained").mkdir(parents=True, exist_ok=True)
+YOLO("yolo11n-obb.pt")
+src = Path("yolo11n-obb.pt")
+if src.exists():
+    src.replace("weights/pretrained/yolo11n-obb.pt")
+PY
 ```
 
-该命令会通过 Ultralytics 下载官方 `yolo11n-obb.pt`，并移动到当前实验配置统一使用的 `weights/pretrained/yolo11n-obb.pt`。
+如果服务器无法联网下载，请手动把 `yolo11n-obb.pt` 放到 `weights/pretrained/`。

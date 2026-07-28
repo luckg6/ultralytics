@@ -1,0 +1,17 @@
+status: ready
+variant: lsknet_t_baseline
+description: /home/ws profile for Chapter 4 LSKNet-T backbone baseline on the official DIOR-R split.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-lsknet-t-baseline.yaml
+pretrained: weights/pretrained/lsknet/yolo11n_obb_lsknet_t_hybrid_init.pt
+data: ultralytics/cfg/datasets/DIOR-official-homews.yaml
+name: dior_official_lsknet_t_baseline
+epochs: 100
+batch: -1
+imgsz: 640
+seed: 42
+device: 1
+workers: 8
+cache: ram
+cos_lr: true
+amp: true
+deterministic: true

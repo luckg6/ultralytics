@@ -1,238 +1,124 @@
-# Linux 服务器 venv 部署与训练流程
+# /home/ws 服务器 venv 环境与训练说明
 
-本文档适用于服务器没有 conda、准备使用 Python `venv` 的情况。
+本文档是当前服务器操作主入口。旧版服务器说明已经归档到 `paper/archive/md_cleanup_20260728/`。
 
-## 核心结论
-
-本仓库是定制版 Ultralytics，已经改过 `ultralytics/` 源码、模型 YAML、训练脚本和评估逻辑。服务器必须使用本仓库源码运行，不能只安装官方 `ultralytics` 包。
-
-首次部署需要执行：
-
-```bash
-pip install -e .
-```
-
-后续普通代码更新只需要：
-
-```bash
-git pull
-```
-
-只有修改依赖、修改 `pyproject.toml`、重建 venv 或误装官方包时，才需要重新执行 `pip install -e .`。
-
-## 首次部署
-
-你的服务器根目录如果是 `/home/ws`，建议目录：
+## 目录约定
 
 ```text
 /home/ws/ultralytics
-/home/ws/datasets/YOLODIOR-R
+/home/ws/datasets/YOLODIOR-R-official
+/home/ws/datasets/HRSID-YOLO
 ```
 
-克隆仓库：
+如果只是继续日常实验，`/home/ws` 服务器默认使用：
+
+- `device=1`
+- `batch=-1`
+- `cache=ram`
+
+如果要复现当前 IPPR 2026 论文表格，则按论文固定协议：
+
+| 数据集 | batch | cache | seeds |
+| --- | ---: | --- | ---: |
+| DIOR-R official | 32 | RAM | 3 |
+| HRSID-derived OBB | 8 | disk | 3 |
+
+## 安装环境
+
+服务器没有 conda 时使用 venv：
 
 ```bash
 cd /home/ws
-git clone https://github.com/luckg6/ultralytics.git
-cd ultralytics
-```
+git clone <repo-url> ultralytics
+cd /home/ws/ultralytics
 
-如果仓库是私有仓库，服务器需要提前配置 GitHub token 或 SSH key。
-
-创建 venv：
-
-```bash
-python3 --version
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install --upgrade pip setuptools wheel
+python -m pip install -U pip setuptools wheel
 ```
 
-建议 Python 使用 3.10 或 3.11。
-
-## 安装 PyTorch
-
-如果服务器镜像已经自带合适的 PyTorch，可以先检查：
+按服务器 CUDA 版本安装 PyTorch。示例为 CUDA 12.1 wheel；如果机器镜像已经自带合适 PyTorch，可以跳过这一行。
 
 ```bash
-python - <<'PY'
-import torch
-print(torch.__version__)
-print(torch.cuda.is_available())
-print(torch.version.cuda)
-print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU only")
-PY
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 ```
 
-如果 venv 里没有 torch，需要按服务器 CUDA 版本安装 PyTorch。以 PyTorch 官网安装选择器为准：
-
-```text
-https://pytorch.org/get-started/locally/
-```
-
-常见示例：
+安装本仓库的改动版 Ultralytics：
 
 ```bash
-# 按服务器 CUDA 版本选择 cu126、cu128 等官方 wheel 源
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu126
-```
-
-如果服务器镜像是 CUDA 12.1、12.4、12.6、12.8 等，优先选择官网对应命令。不要随便装 CPU 版，否则训练会非常慢。
-
-## 安装本仓库
-
-在仓库根目录执行：
-
-```bash
-cd /home/ws/ultralytics
-source .venv/bin/activate
 pip install -e .
 ```
 
-`-e` 是 editable install，会让 Python 直接使用当前 Git 仓库里的源码。这样本地提交并推送后，服务器 `git pull` 就能使用最新的 `SPPFLSK`、`C3k2Geo`、小目标评估等改动。
-
-验证导入路径：
-
-```bash
-python - <<'PY'
-import ultralytics
-from pathlib import Path
-print(Path(ultralytics.__file__).resolve())
-PY
-```
-
-输出应该位于：
-
-```text
-/home/ws/ultralytics/ultralytics/
-```
-
-## 准备数据和权重
-
-DIOR-R 数据集放到：
-
-```text
-/home/ws/datasets/YOLODIOR-R/
-```
-
-目录结构应类似：
-
-```text
-YOLODIOR-R/
-  train/images
-  train/labels
-  val/images
-  val/labels
-  test/images
-  test/labels
-```
-
-预训练权重放到仓库内：
-
-```text
-weights/pretrained/yolo11n-obb.pt
-weights/pretrained/yolo26n.pt
-```
-
-`yolo26n.pt` 用于 Ultralytics AMP 检查，放好后可以避免服务器联网下载。
+必须使用 `-e`，因为仓库内 `ultralytics/` 包含 FSPB、LPCF、OBB head 等本项目改动，不能依赖 pip 上的官方包。
 
 ## 自检
 
-每次登录服务器后：
-
 ```bash
+source /home/ws/ultralytics/.venv/bin/activate
 cd /home/ws/ultralytics
-source .venv/bin/activate
-python scripts/check_server_env.py --env homews --require-cuda
+
+python - <<'PY'
+import torch, ultralytics
+print("torch", torch.__version__)
+print("cuda", torch.cuda.is_available())
+print("gpu0", torch.cuda.get_device_name(0) if torch.cuda.is_available() else "CPU")
+print("ultralytics", ultralytics.__file__)
+PY
 ```
 
-如果使用公司 5090 环境：
+`ultralytics.__file__` 必须指向 `/home/ws/ultralytics/ultralytics/`，不能指向系统 `site-packages` 中的官方包。
+
+## 数据集检查
+
+DIOR-R official：
 
 ```bash
-python scripts/check_server_env.py --env company5090 --require-cuda
+ls /home/ws/datasets/YOLODIOR-R-official/train/images | head
+ls /home/ws/datasets/YOLODIOR-R-official/val/images | head
+ls /home/ws/datasets/YOLODIOR-R-official/test/images | head
 ```
 
-## 启动训练
-
-先 dry-run：
+HRSID-derived OBB：
 
 ```bash
-python scripts/train_obb.py --config experiments/dior/c_dynamic.yaml --env homews --dry-run
+ls /home/ws/datasets/HRSID-YOLO/train/images | head
+ls /home/ws/datasets/HRSID-YOLO/val/images | head
+ls /home/ws/datasets/HRSID-YOLO/test/images | head
 ```
 
-正式训练：
+## 训练入口
+
+统一训练命令：
 
 ```bash
-python scripts/train_obb.py --config experiments/dior/c_dynamic.yaml --env homews
+python scripts/train_obb.py --config <experiment.yaml>
 ```
 
-其他实验只需要替换 `--config`：
-
-```bash
-python scripts/train_obb.py --config experiments/dior/a_p2.yaml --env homews
-python scripts/train_obb.py --config experiments/dior/b_lsk.yaml --env homews
-python scripts/train_obb.py --config experiments/dior/c_dynamic.yaml --env homews
-```
-
-当前统一主实验 batch 是 `4`。
-
-## 后续更新代码
-
-本地 Codex 改完代码后提交并推送。服务器上：
-
-```bash
-cd /home/ws/ultralytics
-source .venv/bin/activate
-git pull
-```
-
-普通源码、YAML、脚本更新后，不需要重新 `pip install -e .`。
-
-需要重新安装的情况：
-
-- 改了 `pyproject.toml`。
-- 新增或删除了 Python 依赖。
-- 改了包入口配置。
-- 删除或重建了 `.venv`。
-- 发现导入的是官方 `site-packages/ultralytics`，不是当前仓库。
-
-重新安装命令：
-
-```bash
-pip install -e .
-```
-
-## 断点续训
-
-```bash
-python scripts/train_obb.py \
-  --config experiments/dior/c_dynamic.yaml \
-  --env homews \
-  --resume runs/obb/dior_C_dynamic/weights/last.pt
-```
-
-`--resume` 是恢复 optimizer、scaler、epoch 等训练状态，不是把 `last.pt` 当成新的预训练权重。
-
-## 结果回传
-
-训练结束后，建议把关键文件整理到 Git 跟踪目录：
-
-```bash
-mkdir -p weights/experiments/dior/c_dynamic
-cp runs/obb/dior_C_dynamic/weights/best.pt weights/experiments/dior/c_dynamic/best.pt
-cp runs/obb/dior_C_dynamic/weights/last.pt weights/experiments/dior/c_dynamic/last.pt
-```
-
-日志建议整理到：
+当前论文主实验目录：
 
 ```text
-experiments/logs/dior/c_dynamic/
+experiments/dior_official/
+experiments/hrsid/
 ```
 
-然后提交：
+不要把旧 `experiments/dior/` 的 8:1:1 配置当作论文 DIOR-R official 主实验。
+
+## 评估入口
 
 ```bash
-git add weights/experiments/dior/c_dynamic experiments/logs/dior/c_dynamic
-git commit -m "Add DIOR C-Dynamic results"
-git push
+python scripts/evaluate_obb.py \
+  --model runs/obb/<run-name>/weights/best.pt \
+  --data <dataset.yaml> \
+  --split test \
+  --mode both \
+  --imgsz 640
 ```
+
+`--mode both` 会同时给出全尺度和本项目小目标诊断指标。小目标定义为 `wh < 1024 px^2`。
+
+## 常见问题
+
+- 如果导入到了官方 `site-packages/ultralytics`，重新执行 `pip install -e .`。
+- 如果 RAM cache 不够，临时改为 `cache=disk`，但正式复现实验要记录变化。
+- 多卡 DDP 不支持自动 batch 时，手动指定能被 GPU 数量整除的 batch。
+- 权重文件不要提交到 git；远程仓库只保留代码、配置和 md 记录。

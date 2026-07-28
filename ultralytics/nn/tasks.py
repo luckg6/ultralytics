@@ -63,6 +63,7 @@ from ultralytics.nn.modules import (
     Index,
     LRPCHead,
     LSKBlock,
+    LSKNetT,
     Pose,
     Pose26,
     ResidualFeatureBlend,
@@ -1690,6 +1691,9 @@ def parse_model(d, ch, verbose=True):
         elif m is LSKBlock:
             c2 = ch[f]
             args = [c2, *args]
+        elif m is LSKNetT:
+            c2 = args[1] if len(args) > 1 and isinstance(args[1], list) else [32, 64, 160, 256]
+            args = [ch[f], *args]
         elif m is ResidualFeatureBlend:
             if len(f) != 2 or ch[f[0]] != ch[f[1]]:
                 raise ValueError(f"ResidualFeatureBlend requires two equal-channel inputs, got {[ch[x] for x in f]}")

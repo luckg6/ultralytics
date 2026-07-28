@@ -160,6 +160,7 @@ weights/*
 !weights/**/
 *.pt
 *.pth
+*.pth.tar
 *.ckpt
 *.safetensors
 *.weights
@@ -173,6 +174,11 @@ weights/*
 *.tflite
 *.h5
 *.mnn
+
+# Keep pretrained initialization weights in Git so fresh server clones can train directly.
+!weights/pretrained/
+!weights/pretrained/**
+
 *_saved_model/
 *_web_model/
 *_openvino_model/

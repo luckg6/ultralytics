@@ -18,6 +18,7 @@ __all__ = (
     "DirectionalGeoPlusAttention",
     "GRALiteAttention",
     "LSKBlock",
+    "LSKNetT",
     "PKIContext",
     "P2SemanticGuard",
     "ResidualFeatureBlend",
@@ -146,6 +147,211 @@ class SPPFLSK(SPPF):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """Apply SPPF and then LSK-style context attention."""
         return self.lsk(super().forward(x))
+
+
+class DropPath(nn.Module):
+    """Stochastic depth used by the official LSKNet blocks."""
+
+    def __init__(self, drop_prob: float = 0.0):
+        """Initialize stochastic depth with a per-sample drop probability."""
+        super().__init__()
+        self.drop_prob = float(drop_prob)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply stochastic depth during training and identity during evaluation."""
+        if self.drop_prob == 0.0 or not self.training:
+            return x
+        keep_prob = 1.0 - self.drop_prob
+        shape = (x.shape[0],) + (1,) * (x.ndim - 1)
+        random_tensor = keep_prob + torch.rand(shape, dtype=x.dtype, device=x.device)
+        return x.div(keep_prob) * random_tensor.floor()
+
+
+class LSKNetDWConv(nn.Module):
+    """Depthwise convolution inside the LSKNet MLP block."""
+
+    def __init__(self, dim: int):
+        """Initialize a 3x3 depthwise convolution."""
+        super().__init__()
+        self.dwconv = nn.Conv2d(dim, dim, 3, 1, 1, bias=True, groups=dim)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply depthwise convolution."""
+        return self.dwconv(x)
+
+
+class LSKNetMlp(nn.Module):
+    """Convolutional MLP used by LSKNet."""
+
+    def __init__(self, in_features: int, hidden_features: int | None = None, out_features: int | None = None, drop: float = 0.0):
+        """Initialize pointwise-depthwise-pointwise MLP."""
+        super().__init__()
+        out_features = out_features or in_features
+        hidden_features = hidden_features or in_features
+        self.fc1 = nn.Conv2d(in_features, hidden_features, 1)
+        self.dwconv = LSKNetDWConv(hidden_features)
+        self.act = nn.GELU()
+        self.fc2 = nn.Conv2d(hidden_features, out_features, 1)
+        self.drop = nn.Dropout(drop)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply the LSKNet MLP."""
+        x = self.fc1(x)
+        x = self.dwconv(x)
+        x = self.act(x)
+        x = self.drop(x)
+        x = self.fc2(x)
+        return self.drop(x)
+
+
+class LSKNetSelectiveKernel(nn.Module):
+    """Official LSKNet selective large-kernel attention block."""
+
+    def __init__(self, dim: int):
+        """Initialize local and dilated spatial branches."""
+        super().__init__()
+        self.conv0 = nn.Conv2d(dim, dim, 5, padding=2, groups=dim)
+        self.conv_spatial = nn.Conv2d(dim, dim, 7, stride=1, padding=9, groups=dim, dilation=3)
+        self.conv1 = nn.Conv2d(dim, dim // 2, 1)
+        self.conv2 = nn.Conv2d(dim, dim // 2, 1)
+        self.conv_squeeze = nn.Conv2d(2, 2, 7, padding=3)
+        self.conv = nn.Conv2d(dim // 2, dim, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Select between local and large-context depthwise branches."""
+        attn1 = self.conv0(x)
+        attn2 = self.conv_spatial(attn1)
+        attn1 = self.conv1(attn1)
+        attn2 = self.conv2(attn2)
+
+        attn = torch.cat([attn1, attn2], dim=1)
+        avg_attn = torch.mean(attn, dim=1, keepdim=True)
+        max_attn = torch.max(attn, dim=1, keepdim=True)[0]
+        sig = self.conv_squeeze(torch.cat([avg_attn, max_attn], dim=1)).sigmoid()
+        attn = attn1 * sig[:, 0:1] + attn2 * sig[:, 1:2]
+        return x * self.conv(attn)
+
+
+class LSKNetAttention(nn.Module):
+    """Attention wrapper used in each LSKNet block."""
+
+    def __init__(self, d_model: int):
+        """Initialize projection, selective-kernel gating, and output projection."""
+        super().__init__()
+        self.proj_1 = nn.Conv2d(d_model, d_model, 1)
+        self.activation = nn.GELU()
+        self.spatial_gating_unit = LSKNetSelectiveKernel(d_model)
+        self.proj_2 = nn.Conv2d(d_model, d_model, 1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply LSK attention with a residual connection."""
+        shortcut = x
+        x = self.proj_1(x)
+        x = self.activation(x)
+        x = self.spatial_gating_unit(x)
+        x = self.proj_2(x)
+        return x + shortcut
+
+
+class LSKNetStageBlock(nn.Module):
+    """One official LSKNet residual block."""
+
+    def __init__(self, dim: int, mlp_ratio: float = 4.0, drop: float = 0.0, drop_path: float = 0.0):
+        """Initialize normalization, attention, MLP, layer scales, and drop path."""
+        super().__init__()
+        self.norm1 = nn.BatchNorm2d(dim)
+        self.norm2 = nn.BatchNorm2d(dim)
+        self.attn = LSKNetAttention(dim)
+        self.drop_path = DropPath(drop_path) if drop_path > 0.0 else nn.Identity()
+        self.mlp = LSKNetMlp(in_features=dim, hidden_features=int(dim * mlp_ratio), drop=drop)
+        self.layer_scale_1 = nn.Parameter(1e-2 * torch.ones(dim), requires_grad=True)
+        self.layer_scale_2 = nn.Parameter(1e-2 * torch.ones(dim), requires_grad=True)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply attention and MLP residual updates."""
+        scale1 = self.layer_scale_1.view(1, -1, 1, 1)
+        scale2 = self.layer_scale_2.view(1, -1, 1, 1)
+        x = x + self.drop_path(scale1 * self.attn(self.norm1(x)))
+        return x + self.drop_path(scale2 * self.mlp(self.norm2(x)))
+
+
+class LSKNetOverlapPatchEmbed(nn.Module):
+    """Overlapping patch embedding used by LSKNet."""
+
+    def __init__(self, patch_size: int, stride: int, in_chans: int, embed_dim: int):
+        """Initialize convolutional patch embedding and batch normalization."""
+        super().__init__()
+        self.proj = nn.Conv2d(in_chans, embed_dim, kernel_size=patch_size, stride=stride, padding=patch_size // 2)
+        self.norm = nn.BatchNorm2d(embed_dim)
+
+    def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, int, int]:
+        """Project image/features to a stage feature map."""
+        x = self.proj(x)
+        _, _, h, w = x.shape
+        return self.norm(x), h, w
+
+
+class LSKNetT(nn.Module):
+    """Dependency-free LSKNet-T backbone adapted for Ultralytics YAML parsing.
+
+    It follows the official LSKNet-T setting used by the DOTA Oriented R-CNN
+    checkpoint: embed_dims=[32, 64, 160, 256] and depths=[3, 3, 5, 2].
+    The attribute names mirror the official implementation so that checkpoint
+    keys can be loaded after stripping the ``backbone.`` prefix.
+    """
+
+    def __init__(
+        self,
+        in_chans: int = 3,
+        embed_dims: list[int] | None = None,
+        depths: list[int] | None = None,
+        mlp_ratios: list[float] | None = None,
+        drop_rate: float = 0.1,
+        drop_path_rate: float = 0.1,
+    ):
+        """Initialize LSKNet-T stages."""
+        super().__init__()
+        embed_dims = embed_dims or [32, 64, 160, 256]
+        depths = depths or [3, 3, 5, 2]
+        mlp_ratios = mlp_ratios or [8, 8, 4, 4]
+        self.embed_dims = embed_dims
+        self.depths = depths
+        self.num_stages = len(embed_dims)
+
+        dpr = torch.linspace(0, drop_path_rate, sum(depths)).tolist()
+        cur = 0
+        for i in range(self.num_stages):
+            patch_embed = LSKNetOverlapPatchEmbed(
+                patch_size=7 if i == 0 else 3,
+                stride=4 if i == 0 else 2,
+                in_chans=in_chans if i == 0 else embed_dims[i - 1],
+                embed_dim=embed_dims[i],
+            )
+            block = nn.ModuleList(
+                LSKNetStageBlock(embed_dims[i], mlp_ratios[i], drop_rate, dpr[cur + j]) for j in range(depths[i])
+            )
+            norm = nn.LayerNorm(embed_dims[i])
+            cur += depths[i]
+            setattr(self, f"patch_embed{i + 1}", patch_embed)
+            setattr(self, f"block{i + 1}", block)
+            setattr(self, f"norm{i + 1}", norm)
+
+    def forward(self, x: torch.Tensor) -> list[torch.Tensor]:
+        """Return C2, C3, C4, and C5 features at strides 4, 8, 16, and 32."""
+        b = x.shape[0]
+        outs = []
+        for i in range(self.num_stages):
+            patch_embed = getattr(self, f"patch_embed{i + 1}")
+            block = getattr(self, f"block{i + 1}")
+            norm = getattr(self, f"norm{i + 1}")
+            x, h, w = patch_embed(x)
+            for blk in block:
+                x = blk(x)
+            x = x.flatten(2).transpose(1, 2)
+            x = norm(x)
+            x = x.reshape(b, h, w, -1).permute(0, 3, 1, 2).contiguous()
+            outs.append(x)
+        return outs
 
 
 class C3k2PKI(C3k2):
