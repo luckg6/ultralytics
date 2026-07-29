@@ -48,6 +48,18 @@ YOLO_TO_LSK_FDF_LAYERS = {
     23: 19,  # OBB head
 }
 
+YOLO_TO_LSK_OAC_LAYERS = {
+    9: 9,  # SPPF
+    10: 10,  # C2PSA
+    13: 14,  # top-down P5->P4 C3k2 after OAC
+    16: 17,  # top-down P4->P3 C3k2 after OAC
+    17: 18,  # PAN P3->P4 downsample
+    19: 20,  # PAN P4 C3k2
+    20: 21,  # PAN P4->P5 downsample
+    22: 23,  # PAN P5 C3k2
+    23: 24,  # OBB head
+}
+
 
 def resolve(path: str | Path) -> Path:
     """Resolve a repository-relative or absolute path."""
@@ -97,7 +109,11 @@ def load_lsk_backbone(target: dict[str, torch.Tensor], dota_path: Path) -> tuple
 
 def choose_yolo_mapping(model_path: Path) -> dict[int, int]:
     """Choose the compatible YOLO11 layer-index mapping for a Chapter 4 model."""
-    return YOLO_TO_LSK_FDF_LAYERS if "fdf" in model_path.stem else YOLO_TO_LSK_YOLO_LAYERS
+    if "fdf" in model_path.stem:
+        return YOLO_TO_LSK_FDF_LAYERS
+    if "oac" in model_path.stem:
+        return YOLO_TO_LSK_OAC_LAYERS
+    return YOLO_TO_LSK_YOLO_LAYERS
 
 
 def load_yolo_neck_head(

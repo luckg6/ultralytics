@@ -39,7 +39,7 @@ DIOR-R official test：
 | Point-axis geometry | Projecting Points to Axes: Oriented Object Detection via Point-Axis Representation | ECCV 2024 | 官网有 paper/code 链接，尚未本地化 | 几何辅助监督备选，工程量偏大 |
 | CANConv | Content-Adaptive Non-Local Convolution for Remote Sensing Pansharpening | CVPR 2024 | 源码未下载成功；原任务是 pansharpening | 低优先级。遥感属性强，但迁移到检测需要额外论证 |
 
-## 推荐 C：方向感知特征校准模块
+## 已实现 C：方向感知特征校准模块
 
 暂名：`OAC` / `Orientation-Aware Calibration`。
 
@@ -61,6 +61,15 @@ LSKNet-T C3/C4/C5 output
 -> original YOLO11 Neck
 -> original YOLO11 OBB Head
 ```
+
+当前实现：
+
+- 模块：`ultralytics/nn/modules/remote_obb_blocks.py` 中的 `OrientationAwareCalibration`。
+- 模型：`ultralytics/cfg/models/11/remote_obb/yolo11n-obb-lsknet-t-oac.yaml`。
+- 本地配置：`experiments/chapter4/lsknet_t_oac_dior_official.yaml`。
+- `/home/ws` 配置：`experiments/chapter4/lsknet_t_oac_dior_official_homews.yaml`，固定 `batch=16`、`device=1`、`cache=ram`。
+- 初始化报告：`experiments/chapter4/lsknet_t_oac_init_report.md`。
+- 初始化核验：LSKNet-T DOTA backbone 478/478，YOLO11n-OBB compatible neck/head 304/355，Params 5.849M，GFLOPs 19.1。
 
 优点：
 
@@ -108,11 +117,13 @@ Upsample(high-level feature) + lateral low-level feature
 - 本地配置：`experiments/chapter4/lsknet_t_fdf_dior_official.yaml`。
 - `/home/ws` 配置：`experiments/chapter4/lsknet_t_fdf_dior_official_homews.yaml`，固定 `batch=16`、`device=1`、`cache=ram`。
 - 初始化报告：`experiments/chapter4/lsknet_t_fdf_init_report.md`。
+- 单种子评估记录：`experiments/chapter4/eval_lsknet_t_fdf_dior_official_test_2026-07-29.md`。
 
 风险：
 
 - 当前是 FreqFusion 启发的轻量近似版，不完整搬运官方 ALPF/AHPF/offset 生成器。
-- 如果单种子结果不够好，可基于已补齐的 FreqFusion 源码再升级为更接近原论文的版本。
+- DIOR-R official 单种子结果显示小目标 mAP50 / mAP50:95 分别提升 +1.64 / +1.32，全尺度 mAP50:95 微升 +0.04，但全尺度 mAP50 下降 -0.13。FDF 方向有效但还不是四项全优。
+- 如果后续 C 不能补回全尺度 mAP50，可基于已补齐的 FreqFusion 源码再升级为更接近原论文的 FDF-plus。
 
 ## 备选 D：FDConv-style 频域动态卷积
 
@@ -160,8 +171,8 @@ https://github.com/duanyll/CANConv
 
 ```text
 第一优先级：
-  先训练 D = FDF，基于 FreqFusion/频率融合思路的轻量细节融合
-  再实现 C = OAC，基于 GRA 思路的 LSKNet adapter 后方向感知校准
+  D = FDF 已完成单种子训练，主要提升小目标指标
+  C = OAC 已完成代码和配置，下一步训练 OAC 单点，验证能否补回全尺度 mAP50
 
 第二优先级：
   若 FreqFusion 材料迟迟不齐，则 D 改为 FDConv-lite，用本地 FDConv 材料做频域动态卷积轻量适配

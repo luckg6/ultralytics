@@ -86,6 +86,20 @@ python scripts/train_obb.py --config experiments/chapter4/lsknet_t_baseline_dior
 4. 小目标检测能力仍低于第三章 A+B；
 5. 该 baseline 可以继续作为第四章候选基础模型。
 
+### DIOR-R official single-seed D-FDF
+
+- Run directory: `runs/obb/dior_official_lsknet_t_fdf/`
+- 评估记录：`experiments/chapter4/eval_lsknet_t_fdf_dior_official_test_2026-07-29.md`
+- 训练参数：`device=1`、`batch=16`、`cache=ram`、`epochs=100`、`seed=42`
+- Test 指标如下，精度为百分数：
+
+| Model | Params (M) | GFLOPs | All mAP50 | All mAP50:95 | Small mAP50 | Small mAP50:95 |
+|---|---:|---:|---:|---:|---:|---:|
+| LSKNet-T baseline | 5.728 | 18.7 | 73.72 | 56.88 | 27.69 | 18.15 |
+| LSKNet-T + FDF | 5.758 | 18.7 | 73.59 | 56.92 | 29.33 | 19.47 |
+
+相对于 LSKNet-T baseline，FDF 的小目标 mAP50 / mAP50:95 分别提升 +1.64 / +1.32，全尺度 mAP50:95 微升 +0.04，但全尺度 mAP50 下降 -0.13。因此 FDF 是有价值的 D 候选，尤其能补 LSKNet-T baseline 的小目标不足，但还不是四项全优的单模块结果。
+
 ## 后续 C/D 设计原则
 
 第四章后续 C、D 首先与自己的 LSKNet-T baseline 做消融，而不是为了强行超过第三章 A+B 来设计。
@@ -94,6 +108,40 @@ python scripts/train_obb.py --config experiments/chapter4/lsknet_t_baseline_dior
 
 - C：基于 ECCV 2024 GRA 思路的 LSKNet adapter 后方向感知特征校准；
 - D：基于 FreqFusion/FDConv 思路的频率感知细节融合或频域动态卷积轻量适配。
+
+### 已配置：C-OAC
+
+OAC 是 GRA 启发的方向感知特征校准模块，插入在 LSKNet-T 输出通道适配之后、原始 YOLO11 neck 之前。它使用四个固定方向的 masked depthwise 分支和输入自适应 routing，显式增强旋转方向响应；残差缩放为零初始化，训练起点保持接近 LSKNet-T baseline。
+
+| 环境 | 配置 | 说明 |
+|---|---|---|
+| 本地 | `experiments/chapter4/lsknet_t_oac_dior_official.yaml` | `batch=4`、`cache=disk`、`device=0` |
+| `/home/ws` | `experiments/chapter4/lsknet_t_oac_dior_official_homews.yaml` | `batch=16`、`cache=ram`、`device=1` |
+
+训练前已生成专属初始化权重：
+
+```text
+weights/pretrained/lsknet/yolo11n_obb_lsknet_t_oac_hybrid_init.pt
+```
+
+初始化核验：
+
+- LSKNet-T DOTA backbone keys loaded: 478/478；
+- YOLO11n-OBB compatible neck/head keys loaded: 304/355；
+- Params: 5.849M；
+- GFLOPs: 19.1。
+
+本地训练：
+
+```bash
+python scripts/train_obb.py --config experiments/chapter4/lsknet_t_oac_dior_official.yaml
+```
+
+`/home/ws` 训练：
+
+```bash
+python scripts/train_obb.py --config experiments/chapter4/lsknet_t_oac_dior_official_homews.yaml
+```
 
 ### 已配置：D-FDF
 
@@ -114,8 +162,8 @@ weights/pretrained/lsknet/yolo11n_obb_lsknet_t_fdf_hybrid_init.pt
 
 - LSKNet-T DOTA backbone keys loaded: 478/478；
 - YOLO11n-OBB compatible neck/head keys loaded: 304/355；
-- Params: 5.794M；
-- GFLOPs: 19.0。
+- 初始化 dry-run Params/GFLOPs: 5.794M / 19.0；
+- 已训练 checkpoint 的 evaluation summary: 5.758M / 18.7 GFLOPs。
 
 本地训练：
 

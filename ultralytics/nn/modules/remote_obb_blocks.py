@@ -20,6 +20,7 @@ __all__ = (
     "GRALiteAttention",
     "LSKBlock",
     "LSKNetT",
+    "OrientationAwareCalibration",
     "PKIContext",
     "P2SemanticGuard",
     "ResidualFeatureBlend",
@@ -686,6 +687,56 @@ class GRALiteAttention(nn.Module):
         pooled = torch.cat((torch.mean(oriented, dim=1, keepdim=True), torch.max(oriented, dim=1, keepdim=True)[0]), dim=1)
         modulated = oriented * self.group_gate(oriented) * self.spatial_gate(pooled)
         return x + self.gamma * self.restore(modulated)
+
+
+class OrientationAwareCalibration(nn.Module):
+    """Direction-aware adapter calibration for the LSKNet-T Chapter 4 baseline.
+
+    Unlike the earlier C3k2GRA head/neck block, this module is inserted directly
+    after the LSKNet-to-YOLO channel adapters. It keeps the feature shape
+    unchanged and starts from an exact identity with a zero-initialized scale.
+    """
+
+    def __init__(self, c1: int, expansion: float = 0.25, k: int = 7, max_mid: int = 128):
+        """Initialize orientation-masked branches and local-global routing."""
+        super().__init__()
+        c_mid = max(min(int(c1 * expansion), max_mid), 32)
+        c_gate = max(c_mid // 4, 16)
+        self.reduce = ConvBNAct(c1, c_mid, 1, p=0)
+        self.local_context = nn.Sequential(
+            nn.Conv2d(c_mid, c_mid, 3, padding=1, groups=c_mid, bias=False),
+            nn.BatchNorm2d(c_mid),
+            nn.SiLU(inplace=True),
+        )
+        self.branches = nn.ModuleList(MaskedDirectionalDWConv(c_mid, mask) for mask in _orientation_masks(k))
+        self.branch_norm = nn.BatchNorm2d(c_mid)
+        self.routing = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(c_mid, c_gate, 1, bias=True),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(c_gate, 4, 1, bias=True),
+        )
+        self.channel_gate = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(c_mid, c_gate, 1, bias=True),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(c_gate, c_mid, 1, bias=True),
+            nn.Sigmoid(),
+        )
+        self.spatial_gate = nn.Sequential(nn.Conv2d(2, 1, 7, padding=3, bias=True), nn.Sigmoid())
+        self.restore = ConvBNAct(c_mid, c1, 1, p=0)
+        self.softmax = nn.Softmax(dim=1)
+        self.gamma = nn.Parameter(torch.zeros(1))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Calibrate adapter features with orientation-aware residual responses."""
+        y = self.local_context(self.reduce(x))
+        branches = torch.stack([branch(y) for branch in self.branches], dim=1)
+        weights = self.softmax(self.routing(y)).unsqueeze(2)
+        oriented = self.branch_norm((branches * weights).sum(dim=1))
+        pooled = torch.cat((oriented.mean(1, keepdim=True), oriented.amax(1, keepdim=True)), dim=1)
+        oriented = oriented * self.channel_gate(oriented) * self.spatial_gate(pooled)
+        return x + torch.tanh(self.gamma) * self.restore(oriented)
 
 
 class C3k2Geo(C3k2):

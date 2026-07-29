@@ -65,6 +65,7 @@ from ultralytics.nn.modules import (
     LRPCHead,
     LSKBlock,
     LSKNetT,
+    OrientationAwareCalibration,
     Pose,
     Pose26,
     ResidualFeatureBlend,
@@ -1690,6 +1691,9 @@ def parse_model(d, ch, verbose=True):
         elif m is AIFI:
             args = [ch[f], *args]
         elif m is LSKBlock:
+            c2 = ch[f]
+            args = [c2, *args]
+        elif m is OrientationAwareCalibration:
             c2 = ch[f]
             args = [c2, *args]
         elif m is LSKNetT:
