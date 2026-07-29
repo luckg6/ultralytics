@@ -36,6 +36,18 @@ YOLO_TO_LSK_YOLO_LAYERS = {
     23: 21,  # OBB head
 }
 
+YOLO_TO_LSK_FDF_LAYERS = {
+    9: 7,  # SPPF
+    10: 8,  # C2PSA
+    13: 10,  # top-down P5->P4 C3k2 after FDF
+    16: 12,  # top-down P4->P3 C3k2 after FDF
+    17: 13,  # PAN P3->P4 downsample
+    19: 15,  # PAN P4 C3k2
+    20: 16,  # PAN P4->P5 downsample
+    22: 18,  # PAN P5 C3k2
+    23: 19,  # OBB head
+}
+
 
 def resolve(path: str | Path) -> Path:
     """Resolve a repository-relative or absolute path."""
@@ -83,7 +95,14 @@ def load_lsk_backbone(target: dict[str, torch.Tensor], dota_path: Path) -> tuple
     return mapped, skipped, [k for k in source if k.startswith("backbone.")]
 
 
-def load_yolo_neck_head(target: dict[str, torch.Tensor], yolo_path: Path) -> tuple[dict[str, torch.Tensor], list[str], list[str]]:
+def choose_yolo_mapping(model_path: Path) -> dict[int, int]:
+    """Choose the compatible YOLO11 layer-index mapping for a Chapter 4 model."""
+    return YOLO_TO_LSK_FDF_LAYERS if "fdf" in model_path.stem else YOLO_TO_LSK_YOLO_LAYERS
+
+
+def load_yolo_neck_head(
+    target: dict[str, torch.Tensor], yolo_path: Path, layer_mapping: dict[int, int]
+) -> tuple[dict[str, torch.Tensor], list[str], list[str]]:
     """Map compatible YOLO11n-OBB neck/head layers into the LSKNet baseline."""
     ckpt = trusted_torch_load(yolo_path)
     source_model = ckpt["model"] if isinstance(ckpt, dict) and "model" in ckpt else ckpt
@@ -96,10 +115,10 @@ def load_yolo_neck_head(target: dict[str, torch.Tensor], yolo_path: Path) -> tup
         if len(parts) < 3 or not parts[1].isdigit():
             continue
         old_layer = int(parts[1])
-        if old_layer not in YOLO_TO_LSK_YOLO_LAYERS:
+        if old_layer not in layer_mapping:
             continue
         considered.append(key)
-        new_key = f"model.{YOLO_TO_LSK_YOLO_LAYERS[old_layer]}.{parts[2]}"
+        new_key = f"model.{layer_mapping[old_layer]}.{parts[2]}"
         if new_key in target and target[new_key].shape == value.shape:
             mapped[new_key] = value
         else:
@@ -146,7 +165,8 @@ def main() -> None:
     target = model.state_dict()
 
     lsk_mapped, lsk_skipped, lsk_considered = load_lsk_backbone(target, dota_path)
-    yolo_mapped, yolo_skipped, yolo_considered = load_yolo_neck_head(target, yolo_path)
+    layer_mapping = choose_yolo_mapping(model_path)
+    yolo_mapped, yolo_skipped, yolo_considered = load_yolo_neck_head(target, yolo_path, layer_mapping)
     merged = {**lsk_mapped, **yolo_mapped}
     model.load_state_dict(merged, strict=False)
 
@@ -173,7 +193,7 @@ def main() -> None:
 
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report = [
-        "# LSKNet-T Baseline Initialization Report",
+        "# LSKNet-T Hybrid Initialization Report",
         "",
         f"- Generated: `{datetime.now().isoformat(timespec='seconds')}`",
         f"- Model YAML: `{model_path.relative_to(ROOT)}`",
@@ -197,6 +217,7 @@ def main() -> None:
             "",
             "## Weight Loading",
             "",
+            f"- YOLO layer mapping: `{layer_mapping}`",
             f"- DOTA checkpoint: `{dota_path.relative_to(ROOT)}`",
             f"- DOTA `backbone.*` keys considered: {len(lsk_considered)}",
             f"- DOTA backbone keys loaded: {len(lsk_mapped)}",

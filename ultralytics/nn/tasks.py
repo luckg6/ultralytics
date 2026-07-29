@@ -55,6 +55,7 @@ from ultralytics.nn.modules import (
     DWConv,
     DWConvTranspose2d,
     Focus,
+    FreqDetailFusion,
     GhostBottleneck,
     GhostConv,
     HGBlock,
@@ -1699,6 +1700,11 @@ def parse_model(d, ch, verbose=True):
                 raise ValueError(f"ResidualFeatureBlend requires two equal-channel inputs, got {[ch[x] for x in f]}")
             c2 = ch[f[0]]
             args = [c2, *args]
+        elif m is FreqDetailFusion:
+            if len(f) != 2:
+                raise ValueError(f"FreqDetailFusion requires [deep, lateral] inputs, got {f}")
+            c2 = ch[f[0]] + ch[f[1]]
+            args = [ch[f[0]], ch[f[1]], *args]
         elif m in frozenset({HGStem, HGBlock}):
             c1, cm, c2 = ch[f], args[0], args[1]
             args = [c1, cm, c2, *args[2:]]

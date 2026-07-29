@@ -18,7 +18,7 @@
 
 ## 硕士论文衔接
 
-当前小论文结果可作为硕士论文第三章主体内容。第四章方案入口为 [thesis_chapter3_chapter4_consensus_for_codex.md](thesis_chapter3_chapter4_consensus_for_codex.md)：当前共识是先构建 `LSKNet-T Backbone + 必要通道适配层 + YOLO11 Neck + YOLO11 OBB Head` 的新 baseline，不继承第三章 FSPB/LPCF，再基于该 baseline 设计 C、D 两个不同于 FSPB/LPCF 的创新模块。LSKNet-T 源码和 checkpoint 当前尚未放入本仓库，后续实现前需要先补齐外部材料。
+当前小论文结果可作为硕士论文第三章主体内容。第四章方案入口为 [thesis_chapter3_chapter4_consensus_for_codex.md](thesis_chapter3_chapter4_consensus_for_codex.md)：第三章和第四章是并列互补路线，不再写成严格递进关系。第四章已完成 `LSKNet-T Backbone + 必要通道适配层 + YOLO11 Neck + YOLO11 OBB Head` 的新 baseline，不继承第三章 FSPB/LPCF；LSKNet-T 只是基础架构选择，后续 C、D 才是第四章创新点。
 
 ## 论文主实验
 

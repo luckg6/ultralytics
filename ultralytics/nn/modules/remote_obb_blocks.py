@@ -16,6 +16,7 @@ __all__ = (
     "C3k2PKI",
     "DirectionalGeoAttention",
     "DirectionalGeoPlusAttention",
+    "FreqDetailFusion",
     "GRALiteAttention",
     "LSKBlock",
     "LSKNetT",
@@ -465,6 +466,56 @@ class ResidualFeatureBlend(nn.Module):
         if main.shape != auxiliary.shape:
             raise ValueError(f"ResidualFeatureBlend requires matching shapes, got {main.shape} and {auxiliary.shape}")
         return main + torch.tanh(self.alpha) * (auxiliary - main)
+
+
+class FreqDetailFusion(nn.Module):
+    """Lightweight frequency-aware top-down fusion for Chapter 4 LSKNet experiments.
+
+    The module is inspired by FreqFusion's low/high-frequency diagnosis but keeps
+    the implementation dependency-free. It upsamples the deep semantic feature,
+    smooths it with a low-pass residual, enhances the lateral feature with a
+    gated high-pass residual, and returns the same concat layout as the original
+    YOLO neck: ``[deep_up, lateral]``.
+    """
+
+    def __init__(self, c_deep: int, c_lateral: int, k: int = 5):
+        """Initialize frequency-aware fusion for one top-down neck connection."""
+        super().__init__()
+        pad = k // 2
+        self.deep_lowpass = nn.AvgPool2d(k, stride=1, padding=pad)
+        self.lateral_lowpass = nn.AvgPool2d(3, stride=1, padding=1)
+        self.deep_gate = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(c_deep, max(c_deep // 8, 16), 1, bias=True),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(max(c_deep // 8, 16), c_deep, 1, bias=True),
+            nn.Sigmoid(),
+        )
+        self.detail_gate = nn.Sequential(
+            nn.Conv2d(2, 1, 7, padding=3, bias=True),
+            nn.Sigmoid(),
+        )
+        self.lateral_channel = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(c_lateral, max(c_lateral // 8, 16), 1, bias=True),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(max(c_lateral // 8, 16), c_lateral, 1, bias=True),
+            nn.Sigmoid(),
+        )
+        self.deep_scale = nn.Parameter(torch.zeros(1))
+        self.detail_scale = nn.Parameter(torch.zeros(1))
+
+    def forward(self, features: list[torch.Tensor]) -> torch.Tensor:
+        """Fuse a deep low-resolution feature and a lateral high-resolution feature."""
+        deep, lateral = features
+        deep = F.interpolate(deep, size=lateral.shape[-2:], mode="nearest")
+        deep_context = self.deep_lowpass(deep)
+        deep = deep + torch.tanh(self.deep_scale) * deep_context * self.deep_gate(deep_context)
+
+        highpass = lateral - self.lateral_lowpass(lateral)
+        spatial = self.detail_gate(torch.cat((highpass.mean(1, keepdim=True), highpass.amax(1, keepdim=True)), dim=1))
+        lateral = lateral + torch.tanh(self.detail_scale) * highpass * spatial * self.lateral_channel(highpass)
+        return torch.cat((deep, lateral), dim=1)
 
 
 class DirectionalGeoAttention(nn.Module):

@@ -17,10 +17,12 @@
 - 当前 IPPR 2026 / EI 小论文可理解为硕士论文第三章内容。
 - 第三章维持 `YOLO11n-OBB + FSPB(A) + LPCF(B)`，不要再把 C 系列塞回第三章主线。
 - 第四章方案入口是 [thesis_chapter3_chapter4_consensus_for_codex.md](thesis_chapter3_chapter4_consensus_for_codex.md)。
-- 第四章当前候选方向已确认：先构建 `LSKNet-T Backbone + 必要通道适配层 + YOLO11 Neck + YOLO11 OBB Head` 的新 baseline，不继承第三章 FSPB/LPCF，再根据 baseline 暴露的问题设计 C、D。
+- 第三章和第四章是并列互补路线，不要写成严格模型递进关系，也不要把第四章定位为解决第三章计算量上升的问题。
+- 第四章当前候选方向已确认：采用 `LSKNet-T Backbone + 必要通道适配层 + YOLO11 Neck + YOLO11 OBB Head` 的新 baseline，不继承第三章 FSPB/LPCF，再根据 baseline 暴露的问题设计 C、D。
 - 更换 LSKNet-T Backbone 本身不算创新点；第四章创新点应由 C、D 构成。
 - 第一阶段只做纯 LSKNet-T baseline、结构适配和权重转换；不同时设计 C、D。
 - 第四章正式目标接受两数据集、四组消融、三随机种子，但执行顺序是先 DIOR-R 单种子 baseline，再单种子筛选 C/D，成立后再扩展正式实验。
+- 第四章首先与自己的 LSKNet-T baseline 做受控消融；跨章节结果只用于说明路线特点和复杂度-精度权衡，不用于不公平的绝对排名。
 
 ## 结果可信源
 
@@ -91,4 +93,4 @@
 - 核心索引只保留当前结论；失败实验写成筛选记录，不再堆到根 README。
 - 原始评估 md 不合并、不改写，除非发现路径或指标抄录错误。
 - 不跨 seed、跨数据集或跨划分拼接结果。
-- 权重文件已被 git 忽略，远程仓库不应再提交 `.pt` 等大文件。
+- 普通训练输出权重仍应被 git 忽略；但 `weights/pretrained/` 中用于服务器复现的预训练和初始化权重允许随远程同步。
