@@ -70,6 +70,7 @@ LSKNet-T C3/C4/C5 output
 - `/home/ws` 配置：`experiments/chapter4/lsknet_t_oac_dior_official_homews.yaml`，固定 `batch=16`、`device=1`、`cache=ram`。
 - 初始化报告：`experiments/chapter4/lsknet_t_oac_init_report.md`。
 - 初始化核验：LSKNet-T DOTA backbone 478/478，YOLO11n-OBB compatible neck/head 304/355，Params 5.849M，GFLOPs 19.1。
+- 单种子评估记录：`experiments/chapter4/eval_lsknet_t_oac_dior_official_test_2026-07-29.md`。
 
 优点：
 
@@ -81,6 +82,7 @@ LSKNet-T C3/C4/C5 output
 
 - 之前第三章 C-GRA-Lite 单点在 YOLO11 baseline 上没有成为最优 C，因此第四章不能简单照搬旧 `C3k2GRA`。
 - 应换落点和叙事：不是 head/neck C3k2 后处理，而是 LSKNet-T adapter 后的方向校准。
+- DIOR-R official 单种子结果显示 All mAP50、Small mAP50、Small mAP50:95 分别提升 +0.30、+1.93、+1.32，但 All mAP50:95 下降 -0.13。OAC 方向有效但还不是四项全优。
 
 ## 已实现 D：频率感知细节融合模块
 
@@ -172,7 +174,8 @@ https://github.com/duanyll/CANConv
 ```text
 第一优先级：
   D = FDF 已完成单种子训练，主要提升小目标指标
-  C = OAC 已完成代码和配置，下一步训练 OAC 单点，验证能否补回全尺度 mAP50
+  C = OAC 已完成单种子训练，补回并超过全尺度 mAP50，但 All mAP50:95 略降
+  已实现并配置 C+D = OAC+FDF，下一步训练验证能否合并二者收益
 
 第二优先级：
   若 FreqFusion 材料迟迟不齐，则 D 改为 FDConv-lite，用本地 FDConv 材料做频域动态卷积轻量适配

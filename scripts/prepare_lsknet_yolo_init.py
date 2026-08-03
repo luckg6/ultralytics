@@ -60,6 +60,18 @@ YOLO_TO_LSK_OAC_LAYERS = {
     23: 24,  # OBB head
 }
 
+YOLO_TO_LSK_OAC_FDF_LAYERS = {
+    9: 9,  # SPPF
+    10: 10,  # C2PSA
+    13: 13,  # top-down P5->P4 C3k2 after OAC + FDF
+    16: 15,  # top-down P4->P3 C3k2 after OAC + FDF
+    17: 16,  # PAN P3->P4 downsample
+    19: 18,  # PAN P4 C3k2
+    20: 19,  # PAN P4->P5 downsample
+    22: 21,  # PAN P5 C3k2
+    23: 22,  # OBB head
+}
+
 
 def resolve(path: str | Path) -> Path:
     """Resolve a repository-relative or absolute path."""
@@ -109,11 +121,33 @@ def load_lsk_backbone(target: dict[str, torch.Tensor], dota_path: Path) -> tuple
 
 def choose_yolo_mapping(model_path: Path) -> dict[int, int]:
     """Choose the compatible YOLO11 layer-index mapping for a Chapter 4 model."""
+    if "oac-fdf" in model_path.stem or "oac_fdf" in model_path.stem:
+        return YOLO_TO_LSK_OAC_FDF_LAYERS
     if "fdf" in model_path.stem:
         return YOLO_TO_LSK_FDF_LAYERS
     if "oac" in model_path.stem:
         return YOLO_TO_LSK_OAC_LAYERS
     return YOLO_TO_LSK_YOLO_LAYERS
+
+
+def default_variant_paths(model_path: Path) -> tuple[str, str]:
+    """Infer variant-specific output paths when only ``--model`` is provided."""
+    stem = model_path.stem
+    if "oac-fdf" in stem or "oac_fdf" in stem:
+        variant = "oac_fdf"
+    elif "fdf" in stem:
+        variant = "fdf"
+    elif "oac" in stem:
+        variant = "oac"
+    else:
+        variant = "baseline"
+
+    if variant == "baseline":
+        return DEFAULT_OUT, DEFAULT_REPORT
+    return (
+        f"weights/pretrained/lsknet/yolo11n_obb_lsknet_t_{variant}_hybrid_init.pt",
+        f"experiments/chapter4/lsknet_t_{variant}_init_report.md",
+    )
 
 
 def load_yolo_neck_head(
@@ -167,8 +201,9 @@ def main() -> None:
     model_path = resolve(args.model)
     dota_path = resolve(args.dota)
     yolo_path = resolve(args.yolo)
-    out_path = resolve(args.out)
-    report_path = resolve(args.report)
+    default_out, default_report = default_variant_paths(model_path)
+    out_path = resolve(default_out if args.out == DEFAULT_OUT else args.out)
+    report_path = resolve(default_report if args.report == DEFAULT_REPORT else args.report)
 
     for label, path in {"model": model_path, "dota": dota_path, "yolo": yolo_path}.items():
         if not path.exists():

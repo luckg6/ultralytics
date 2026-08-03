@@ -100,6 +100,21 @@ python scripts/train_obb.py --config experiments/chapter4/lsknet_t_baseline_dior
 
 相对于 LSKNet-T baseline，FDF 的小目标 mAP50 / mAP50:95 分别提升 +1.64 / +1.32，全尺度 mAP50:95 微升 +0.04，但全尺度 mAP50 下降 -0.13。因此 FDF 是有价值的 D 候选，尤其能补 LSKNet-T baseline 的小目标不足，但还不是四项全优的单模块结果。
 
+### DIOR-R official single-seed C-OAC
+
+- Run directory: `runs/obb/dior_official_lsknet_t_oac/`
+- 评估记录：`experiments/chapter4/eval_lsknet_t_oac_dior_official_test_2026-07-29.md`
+- 训练参数：`device=1`、`batch=16`、`cache=ram`、`epochs=100`、`seed=42`
+- Test 指标如下，精度为百分数：
+
+| Model | Params (M) | GFLOPs | All mAP50 | All mAP50:95 | Small mAP50 | Small mAP50:95 |
+|---|---:|---:|---:|---:|---:|---:|
+| LSKNet-T baseline | 5.728 | 18.7 | 73.72 | 56.88 | 27.69 | 18.15 |
+| LSKNet-T + FDF | 5.758 | 18.7 | 73.59 | 56.92 | 29.33 | 19.47 |
+| LSKNet-T + OAC | 5.813 | 18.9 | 74.02 | 56.75 | 29.62 | 19.47 |
+
+相对于 LSKNet-T baseline，OAC 的全尺度 mAP50 提升 +0.30，小目标 mAP50 / mAP50:95 分别提升 +1.93 / +1.32，但全尺度 mAP50:95 下降 -0.13。OAC 与 FDF 的收益侧重点不同：OAC 更能补回 mAP50，FDF 更稳住 mAP50:95，因此已配置 C+D 组合用于验证二者收益能否合并。
+
 ## 后续 C/D 设计原则
 
 第四章后续 C、D 首先与自己的 LSKNet-T baseline 做消融，而不是为了强行超过第三章 A+B 来设计。
@@ -175,6 +190,40 @@ python scripts/train_obb.py --config experiments/chapter4/lsknet_t_fdf_dior_offi
 
 ```bash
 python scripts/train_obb.py --config experiments/chapter4/lsknet_t_fdf_dior_official_homews.yaml
+```
+
+### 已配置：C+D-OAC-FDF
+
+OAC+FDF 是第四章第一版组合实验：OAC 仍放在 LSKNet-T 三个输出适配层之后，用于方向感知特征校准；FDF 仍只替换原 top-down neck 中两次高低层融合入口。组合版不继承第三章 FSPB/LPCF，不新增 P2 分支，OBB Head 保持原三尺度预测。
+
+| 环境 | 配置 | 说明 |
+|---|---|---|
+| 本地 | `experiments/chapter4/lsknet_t_oac_fdf_dior_official.yaml` | `batch=4`、`cache=disk`、`device=0` |
+| `/home/ws` | `experiments/chapter4/lsknet_t_oac_fdf_dior_official_homews.yaml` | `batch=16`、`cache=ram`、`device=1` |
+
+训练前已生成专属初始化权重：
+
+```text
+weights/pretrained/lsknet/yolo11n_obb_lsknet_t_oac_fdf_hybrid_init.pt
+```
+
+初始化核验：
+
+- LSKNet-T DOTA backbone keys loaded: 478/478；
+- YOLO11n-OBB compatible neck/head keys loaded: 304/355；
+- 初始化 dry-run Params/GFLOPs: 5.878M / 19.1；
+- `YOLO(...)` 模型 YAML 和初始化 checkpoint 均可正常加载。
+
+本地训练：
+
+```bash
+python scripts/train_obb.py --config experiments/chapter4/lsknet_t_oac_fdf_dior_official.yaml
+```
+
+`/home/ws` 训练：
+
+```bash
+python scripts/train_obb.py --config experiments/chapter4/lsknet_t_oac_fdf_dior_official_homews.yaml
 ```
 
 C、D 应围绕第四章自己的问题展开，例如：
