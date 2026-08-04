@@ -115,6 +115,33 @@ python scripts/train_obb.py --config experiments/chapter4/lsknet_t_baseline_dior
 
 相对于 LSKNet-T baseline，OAC 的全尺度 mAP50 提升 +0.30，小目标 mAP50 / mAP50:95 分别提升 +1.93 / +1.32，但全尺度 mAP50:95 下降 -0.13。OAC 与 FDF 的收益侧重点不同：OAC 更能补回 mAP50，FDF 更稳住 mAP50:95，因此已配置 C+D 组合用于验证二者收益能否合并。
 
+### DIOR-R official single-seed C+D-OAC-FDF
+
+- Run directory: `runs/obb/dior_official_lsknet_t_oac_fdf/`
+- 评估记录：`experiments/chapter4/eval_lsknet_t_oac_fdf_dior_official_test_2026-08-03.md`
+- 训练参数：`device=1`、`batch=16`、`cache=ram`、`epochs=100`、`seed=42`
+- 训练期最优 val mAP50-95：0.66789，出现在 epoch 100。
+- Test 指标如下，精度为百分数：
+
+| Model | Params (M) | GFLOPs | All mAP50 | All mAP50:95 | Small mAP50 | Small mAP50:95 |
+|---|---:|---:|---:|---:|---:|---:|
+| LSKNet-T baseline | 5.728 | 18.7 | 73.72 | 56.88 | 27.69 | 18.15 |
+| LSKNet-T + FDF | 5.758 | 18.7 | 73.59 | 56.92 | 29.33 | 19.47 |
+| LSKNet-T + OAC | 5.813 | 18.9 | 74.02 | 56.75 | 29.62 | 19.47 |
+| LSKNet-T + OAC + FDF | 5.842 | 18.9 | 74.26 | 57.37 | 29.67 | 19.59 |
+
+相对于 LSKNet-T baseline，OAC+FDF 四项 test 指标全部提升：All mAP50 / mAP50:95 分别提升 +0.54 / +0.49，小目标 mAP50 / mAP50:95 分别提升 +1.98 / +1.44。该组合补回了单独 OAC 的 All mAP50:95 下降，同时保留并小幅增强了 FDF/OAC 在小目标上的收益。因此当前 C/D 组合初步成立，适合进入第二数据集和多 seed 验证阶段。
+
+### DIOR-R official multi-seed configs
+
+DIOR-R official 的 `seed=42` 四组已经完成；补充 `seed=3407` 和 `seed=2026` 的 `/home/ws` 配置与命令已集中记录在：
+
+```text
+experiments/chapter4/dior_official_multiseed_homews_commands.md
+```
+
+这些配置统一使用 `batch=16`、`device=1`、`cache=ram`，run name 均带 `s3407` 或 `s2026`，不会覆盖已有 seed-42 结果。
+
 ## 后续 C/D 设计原则
 
 第四章后续 C、D 首先与自己的 LSKNet-T baseline 做消融，而不是为了强行超过第三章 A+B 来设计。

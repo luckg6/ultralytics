@@ -1,0 +1,17 @@
+status: ready
+variant: lsknet_t_oac
+description: /home/ws multi-seed profile for Chapter 4 C candidate on the official DIOR-R split.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-lsknet-t-oac.yaml
+pretrained: weights/pretrained/lsknet/yolo11n_obb_lsknet_t_oac_hybrid_init.pt
+data: ultralytics/cfg/datasets/DIOR-official-homews.yaml
+name: dior_official_lsknet_t_oac_s2026
+epochs: 100
+batch: 16
+imgsz: 640
+seed: 2026
+device: 1
+workers: 8
+cache: ram
+cos_lr: true
+amp: true
+deterministic: true
