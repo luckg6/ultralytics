@@ -1,0 +1,17 @@
+status: ready
+variant: lsknet_t_oac_fdf_blend
+description: Chapter 4 C+D v2 candidate on the official DIOR-R split. OAC is retained, while FDF is used as zero-start auxiliary top-down branches blended with the original fusion path.
+model: ultralytics/cfg/models/11/remote_obb/yolo11n-obb-lsknet-t-oac-fdf-blend.yaml
+pretrained: weights/pretrained/lsknet/yolo11n_obb_lsknet_t_oac_fdf_blend_hybrid_init.pt
+data: ultralytics/cfg/datasets/DIOR-official.yaml
+name: dior_official_lsknet_t_oac_fdf_blend
+epochs: 100
+batch: 4
+imgsz: 640
+seed: 42
+device: 0
+workers: 4
+cache: disk
+cos_lr: true
+amp: true
+deterministic: true

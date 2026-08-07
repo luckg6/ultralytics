@@ -175,7 +175,7 @@ https://github.com/duanyll/CANConv
 第一优先级：
   D = FDF 已完成单种子训练，主要提升小目标指标
   C = OAC 已完成单种子训练，补回并超过全尺度 mAP50，但 All mAP50:95 略降
-  已完成 C+D = OAC+FDF 单种子训练和 DIOR-R official test 评估，四项指标均超过 LSKNet-T baseline
+  已完成 C+D = OAC+FDF 三 seed DIOR-R official 评估；组合模型在平均 Small mAP50、Small mAP50:95 和 All mAP50:95 上最好，但 All mAP50 平均值由 OAC 单模块最高，且 seed 3407 的组合全尺度指标存在回落
 
 第二优先级：
   若 FreqFusion 材料迟迟不齐，则 D 改为 FDConv-lite，用本地 FDConv 材料做频域动态卷积轻量适配

@@ -72,6 +72,18 @@ YOLO_TO_LSK_OAC_FDF_LAYERS = {
     23: 22,  # OBB head
 }
 
+YOLO_TO_LSK_OAC_FDF_BLEND_LAYERS = {
+    9: 9,  # SPPF
+    10: 10,  # C2PSA
+    13: [14, 16],  # top-down P5->P4 C3k2, main and FDF auxiliary branches
+    16: [20, 22],  # top-down P4->P3 C3k2, main and FDF auxiliary branches
+    17: 24,  # PAN P3->P4 downsample
+    19: 26,  # PAN P4 C3k2
+    20: 27,  # PAN P4->P5 downsample
+    22: 29,  # PAN P5 C3k2
+    23: 30,  # OBB head
+}
+
 
 def resolve(path: str | Path) -> Path:
     """Resolve a repository-relative or absolute path."""
@@ -121,6 +133,8 @@ def load_lsk_backbone(target: dict[str, torch.Tensor], dota_path: Path) -> tuple
 
 def choose_yolo_mapping(model_path: Path) -> dict[int, int]:
     """Choose the compatible YOLO11 layer-index mapping for a Chapter 4 model."""
+    if "oac-fdf-blend" in model_path.stem or "oac_fdf_blend" in model_path.stem:
+        return YOLO_TO_LSK_OAC_FDF_BLEND_LAYERS
     if "oac-fdf" in model_path.stem or "oac_fdf" in model_path.stem:
         return YOLO_TO_LSK_OAC_FDF_LAYERS
     if "fdf" in model_path.stem:
@@ -133,7 +147,9 @@ def choose_yolo_mapping(model_path: Path) -> dict[int, int]:
 def default_variant_paths(model_path: Path) -> tuple[str, str]:
     """Infer variant-specific output paths when only ``--model`` is provided."""
     stem = model_path.stem
-    if "oac-fdf" in stem or "oac_fdf" in stem:
+    if "oac-fdf-blend" in stem or "oac_fdf_blend" in stem:
+        variant = "oac_fdf_blend"
+    elif "oac-fdf" in stem or "oac_fdf" in stem:
         variant = "oac_fdf"
     elif "fdf" in stem:
         variant = "fdf"
@@ -168,10 +184,18 @@ def load_yolo_neck_head(
         if old_layer not in layer_mapping:
             continue
         considered.append(key)
-        new_key = f"model.{layer_mapping[old_layer]}.{parts[2]}"
-        if new_key in target and target[new_key].shape == value.shape:
-            mapped[new_key] = value
-        else:
+        new_layers = layer_mapping[old_layer]
+        if isinstance(new_layers, int):
+            new_layers = [new_layers]
+        loaded_any = False
+        for new_layer in new_layers:
+            new_key = f"model.{new_layer}.{parts[2]}"
+            if new_key in target and target[new_key].shape == value.shape:
+                mapped[new_key] = value
+                loaded_any = True
+            else:
+                skipped.append(key)
+        if not loaded_any and key not in skipped:
             skipped.append(key)
     return mapped, skipped, considered
 

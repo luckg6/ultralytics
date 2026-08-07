@@ -142,6 +142,14 @@ experiments/chapter4/dior_official_multiseed_homews_commands.md
 
 这些配置统一使用 `batch=16`、`device=1`、`cache=ram`，run name 均带 `s3407` 或 `s2026`，不会覆盖已有 seed-42 结果。
 
+三 seed 评估已经完成，汇总记录见：
+
+```text
+experiments/chapter4/dior_official_multiseed_summary_2026-08-07.md
+```
+
+当前结论：OAC+FDF 在三 seed 平均意义下取得最佳 Small mAP50、Small mAP50:95 和 All mAP50:95，但 All mAP50 平均值由 OAC 单模块最高。组合模型不是每个 seed 的全指标第一，尤其 seed 3407 上全尺度指标有回落，因此后续论文或硕士论文中应表述为“小目标和 mAP50:95 更优，存在一定 seed 波动”，不要写成“全指标稳定最优”。
+
 ## 后续 C/D 设计原则
 
 第四章后续 C、D 首先与自己的 LSKNet-T baseline 做消融，而不是为了强行超过第三章 A+B 来设计。
@@ -251,6 +259,32 @@ python scripts/train_obb.py --config experiments/chapter4/lsknet_t_oac_fdf_dior_
 
 ```bash
 python scripts/train_obb.py --config experiments/chapter4/lsknet_t_oac_fdf_dior_official_homews.yaml
+```
+
+### 已配置：C+D v2-OAC-FDF-Blend
+
+OAC+FDF-Blend 是针对多 seed 结果中新组合全尺度指标波动而增加的稳健组合版。它保留 OAC，但不再让 FDF 完全替换原始 top-down 融合；每一级 top-down 融合同时保留原 `Upsample + Concat + C3k2` 主路径，并增加一条 `FDF + C3k2` 辅助路径，最后用零初始化 `ResidualFeatureBlend` 融合。训练起点更接近原 OAC 主路径，目标是减少 seed 3407 上出现的 all-object mAP 回落，同时保留 FDF 对小目标的细节收益。
+
+- Model YAML：`ultralytics/cfg/models/11/remote_obb/yolo11n-obb-lsknet-t-oac-fdf-blend.yaml`
+- 初始化权重：`weights/pretrained/lsknet/yolo11n_obb_lsknet_t_oac_fdf_blend_hybrid_init.pt`
+- 初始化报告：`experiments/chapter4/lsknet_t_oac_fdf_blend_init_report.md`
+- 模型规模：`6.022M` 参数，`19.9` GFLOPs at 640
+
+| 环境 | 配置文件 | 关键设置 |
+| --- | --- | --- |
+| 本地 | `experiments/chapter4/lsknet_t_oac_fdf_blend_dior_official.yaml` | `batch=4`、`cache=disk`、`device=0` |
+| `/home/ws` | `experiments/chapter4/lsknet_t_oac_fdf_blend_dior_official_homews.yaml` | `batch=16`、`cache=ram`、`device=1` |
+
+本地训练：
+
+```bash
+python scripts/train_obb.py --config experiments/chapter4/lsknet_t_oac_fdf_blend_dior_official.yaml
+```
+
+`/home/ws` 服务器训练：
+
+```bash
+python scripts/train_obb.py --config experiments/chapter4/lsknet_t_oac_fdf_blend_dior_official_homews.yaml
 ```
 
 C、D 应围绕第四章自己的问题展开，例如：
