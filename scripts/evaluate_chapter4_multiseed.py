@@ -31,9 +31,9 @@ RUNS_OAC_FDF = [
 ]
 
 RUNS_BLEND = [
-    ("42", "Baseline", "runs/obb/dior_official_lsknet_t_baseline_s42/weights/best.pt"),
-    ("42", "FDF", "runs/obb/dior_official_lsknet_t_fdf_s42/weights/best.pt"),
-    ("42", "OAC", "runs/obb/dior_official_lsknet_t_oac_s42/weights/best.pt"),
+    ("42", "Baseline", "runs/obb/dior_official_lsknet_t_baseline/weights/best.pt"),
+    ("42", "FDF", "runs/obb/dior_official_lsknet_t_fdf/weights/best.pt"),
+    ("42", "OAC", "runs/obb/dior_official_lsknet_t_oac/weights/best.pt"),
     ("42", "OAC+FDF-Blend", "runs/obb/dior_official_lsknet_t_oac_fdf_blend_s42/weights/best.pt"),
     ("3407", "Baseline", "runs/obb/dior_official_lsknet_t_baseline_s3407/weights/best.pt"),
     ("3407", "FDF", "runs/obb/dior_official_lsknet_t_fdf_s3407/weights/best.pt"),
