@@ -18,7 +18,7 @@
 
 ## 硕士论文衔接
 
-当前小论文结果可作为硕士论文第三章主体内容。第四章方案入口为 [thesis_chapter3_chapter4_consensus_for_codex.md](thesis_chapter3_chapter4_consensus_for_codex.md)：第三章和第四章是并列互补路线，不再写成严格递进关系。第四章已完成 `LSKNet-T Backbone + 必要通道适配层 + YOLO11 Neck + YOLO11 OBB Head` 的新 baseline，不继承第三章 FSPB/LPCF；LSKNet-T 只是基础架构选择，后续 C、D 才是第四章创新点。
+当前小论文结果可作为硕士论文第三章主体内容。第四章方案入口为 [thesis_chapter3_chapter4_consensus_for_codex.md](thesis_chapter3_chapter4_consensus_for_codex.md)：第三章和第四章是并列互补路线，不写成严格递进关系。第四章以 `LSKNet-T Backbone + 必要通道适配层 + YOLO11 Neck + YOLO11 OBB Head` 为 baseline，不继承第三章 FSPB/LPCF；LSKNet-T 只是基础架构选择。OAC/FDF 第一轮组合已完成三 seed 筛选但未达到最终目标，当前正在验证 `FDConv-Lite + FDF` 新组合，尚未定稿为第四章最终 C/D。
 
 ## 论文主实验
 
@@ -69,7 +69,8 @@
 | `experiments/hrsid/` | HRSID-derived OBB 第二数据集主实验 |
 | `experiments/dior/` | 早期 8:1:1 DIOR-R 与 C 系列探索配置 |
 | `experiments/ucas_aod/`、`experiments/vedai/`、`experiments/ssdd_rbox/`、`experiments/hrsc2016/` | 第二数据集筛选记录 |
-| `weights/experiments/` | 原始评估 md 和轻量结果记录；权重文件本身已被 git 忽略 |
+| `weights/checkpoints/` | 本地长期保留的论文/当前对照 `best.pt` 与紧凑训练元数据 |
+| `weights/experiments/` | 原始评估 md 和轻量结果记录；普通训练权重被 git 忽略，`weights/pretrained/` 复现必需权重允许同步 |
 | `research/top_conference/` | PKINet、LSKNet、SET 等参考材料记录 |
 | `paper/archive/md_cleanup_20260728/` | 本次整理前的旧 md 备份和草稿建议归档 |
 

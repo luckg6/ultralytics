@@ -1,5 +1,7 @@
 # VEDAI-1024 轻量筛选实验
 
+> 状态：已完成并冻结的第二数据集筛选记录，不进入当前论文主表，也没有待执行训练。下文“当前”“下一步”只描述当时的探索顺序。
+
 ## 原版 A/B/AB 的 imgsz=512 统一复核
 
 为保持与 DIOR-R 完全相同的模型结构，同时不重跑已经完成的 DIOR-R 实验，VEDAI 新增一组统一 `imgsz=512` 的四行复核。四组分别使用原版 baseline、A-P2、B-PKI-Lite 和 A+B-PKI-Lite YAML；它们都从 `weights/pretrained/yolo11n-obb.pt` 独立起训，除模型结构外训练设置完全一致。已有 `imgsz=640` 结果和探索版 A-Plus/AB-Plus 全部保留，不覆盖。

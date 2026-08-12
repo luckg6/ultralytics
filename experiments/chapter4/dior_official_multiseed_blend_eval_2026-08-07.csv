@@ -1,0 +1,13 @@
+seed,variant,all_map50,all_map50_95,small_map50,small_map50_95,weight
+42,Baseline,73.6836,56.8687,27.6878,18.145,runs/obb/dior_official_lsknet_t_baseline/weights/best.pt
+42,FDF,73.5981,56.9227,29.3139,19.4689,runs/obb/dior_official_lsknet_t_fdf/weights/best.pt
+42,OAC,74.0124,56.745,29.6133,19.4653,runs/obb/dior_official_lsknet_t_oac/weights/best.pt
+42,OAC+FDF-Blend,73.7929,57.011,29.1356,19.1392,runs/obb/dior_official_lsknet_t_oac_fdf_blend_s42/weights/best.pt
+3407,Baseline,73.8332,56.9393,27.9114,18.2617,runs/obb/dior_official_lsknet_t_baseline_s3407/weights/best.pt
+3407,FDF,73.7562,56.9633,29.2027,19.2253,runs/obb/dior_official_lsknet_t_fdf_s3407/weights/best.pt
+3407,OAC,73.9136,56.9011,29.0549,19.0933,runs/obb/dior_official_lsknet_t_oac_s3407/weights/best.pt
+3407,OAC+FDF-Blend,73.8172,56.8845,29.3076,19.5286,runs/obb/dior_official_lsknet_t_oac_fdf_blend_s3407/weights/best.pt
+2026,Baseline,73.2717,56.4974,29.1359,18.9943,runs/obb/dior_official_lsknet_t_baseline_s2026/weights/best.pt
+2026,FDF,73.5479,56.6219,29.1384,18.8236,runs/obb/dior_official_lsknet_t_fdf_s2026/weights/best.pt
+2026,OAC,73.6276,56.8151,29.0853,19.2874,runs/obb/dior_official_lsknet_t_oac_s2026/weights/best.pt
+2026,OAC+FDF-Blend,73.3371,56.4852,28.6874,18.983,runs/obb/dior_official_lsknet_t_oac_fdf_blend_s2026/weights/best.pt

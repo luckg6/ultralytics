@@ -1,6 +1,6 @@
 # 2024+ 新候选方向与后续实验计划
 
-> 整理说明：本文件是 C 系列和 2024+ 候选方向的历史探索记录。当前小论文主方法已经确定为 FSPC-OBB，即 FSPB(A) + LPCF(B)；C-Dynamic、C-GRA、C-Chol、C-SET-HBS 不进入当前论文主方法或主消融表。最新论文结果以 `paper/ippr2026/main.pdf` 为准。
+> 冻结说明：本文件是 2026 年 7 月第三章 C 系列与 2024+ 候选方向的时间点记录，文中的“当前”“下一步”和服务器参数只描述当时状态，不再作为执行指令。第三章现已定稿为 FSPC-OBB，即 FSPB(A) + LPCF(B)；第四章入口为 `experiments/chapter4/README.md`。最新论文结果以 `paper/ippr2026/main.pdf` 为准。
 
 当前 DIOR-R 结果说明：
 
@@ -12,9 +12,9 @@
 - C-Dynamic-Plus 已完成训练和评估，作为稍重一点的 C 单点复验版本，比原 C-Dynamic 略好；全尺度 mAP50-95 为 0.6896，小目标 mAP50-95 为 0.3541，但单点提升仍不明显。
 - A+B-PKI-Lite+C-Plus 已完成训练和评估，明显高于 baseline，但低于 A+B-PKI-Lite，说明当前三创新点简单叠加没有超过最佳双创新点组合。
 - C-GRA-Lite 已完成训练和评估，参考 ECCV 2024 GRA 的 group-wise rotating / attention 思想，用标准 PyTorch 的方向掩码 depthwise 分支做轻量适配；小目标略高于 baseline，但全尺度 mAP50-95 和小目标 mAP50-95 均弱于 C-Dynamic-Plus。
-- C-Chol-Lite 已完成训练和评估，明确避开 YOLO11 已有的 ProbIoU/Gaussian covariance/周期角度 loss，新增训练时 Cholesky/SPD 协方差辅助 head；全尺度 mAP50-95 为 0.6902，小目标 mAP50-95 为 0.3589，是当前最佳 C 单点。
+- C-Chol-Lite 已完成训练和评估，明确避开 YOLO11 已有的 ProbIoU/Gaussian covariance/周期角度 loss，新增训练时 Cholesky/SPD 协方差辅助 head；全尺度 mAP50-95 为 0.6902，小目标 mAP50-95 为 0.3589，是该轮筛选最佳 C 单点。
 - A+B-PKI-Lite+C-Chol-Lite 已完成训练和评估，全尺度 mAP50 为 0.8862，略高于 A+B-PKI-Lite，但全尺度 mAP50-95 为 0.7190、小目标 mAP50-95 为 0.4209，仍低于 A+B-PKI-Lite。
-- A+B-PKI-Lite+C-SET-HBS 已完成代码和配置，参考 CVPR 2025 SET 中贡献最大的 HBS；训练期用旋转 GT 掩码保护前景、平滑背景并增加共享 OBB head 辅助监督，推理保持 AB，当前为下一组优先 ABC。
+- A+B-PKI-Lite+C-SET-HBS 当时已完成代码和配置，参考 CVPR 2025 SET 的 HBS；该路线现已停止，不进入定稿方法。
 
 ## 已完成：A+B-PKI-Lite 融合
 
@@ -104,7 +104,7 @@
 - 检查状态：本地和 `/home/ws` dry-run 通过；C-Chol-Lite 从预训练权重可迁移 490/583 项，构建检查参数量为 2,767,516；ABC-Chol-Lite 从预训练权重可迁移 297/777 项，构建检查参数量为 2,897,906；训练态 5 项 loss 和 eval 态无 `chol` 输出均正常。
 - 当前状态：已完成训练和 test 评估。全尺度 mAP50-95 为 0.6902，小目标 mAP50-95 为 0.3589；相对 baseline 分别提升 +0.0028 和 +0.0119；相对 C-Dynamic-Plus 分别提升 +0.0006 和 +0.0048。
 - ABC 组合结果：A+B-PKI-Lite+C-Chol-Lite 已完成训练和 test 评估。全尺度 mAP50-95 为 0.7190，小目标 mAP50-95 为 0.4209；相对 baseline 分别提升 +0.0316 和 +0.0739；相对 A+B-PKI-Lite 分别下降 -0.0008 和 -0.0079；相对 A+B-PKI-Lite+C-Plus 全尺度 mAP50-95 提升 +0.0041，但小目标 mAP50-95 下降 -0.0033。
-- 结论：C-Chol-Lite 是当前最佳 C 单点，但叠加到 A+B 后没有超过 A+B-PKI-Lite；ABC-Chol-Lite 可作为三创新点融合消融或补充结果。
+- 结论：C-Chol-Lite 是该轮筛选最佳 C 单点，但叠加到 A+B 后没有超过 A+B-PKI-Lite；该结果只作历史探索记录。
 
 ## 暂不优先
 

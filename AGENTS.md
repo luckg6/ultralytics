@@ -18,10 +18,11 @@
 - 第三章维持 `YOLO11n-OBB + FSPB(A) + LPCF(B)`，不要再把 C 系列塞回第三章主线。
 - 第四章方案入口是 [thesis_chapter3_chapter4_consensus_for_codex.md](thesis_chapter3_chapter4_consensus_for_codex.md)。
 - 第三章和第四章是并列互补路线，不要写成严格模型递进关系，也不要把第四章定位为解决第三章计算量上升的问题。
-- 第四章当前候选方向已确认：采用 `LSKNet-T Backbone + 必要通道适配层 + YOLO11 Neck + YOLO11 OBB Head` 的新 baseline，不继承第三章 FSPB/LPCF，再根据 baseline 暴露的问题设计 C、D。
+- 第四章基础结构已确认：采用 `LSKNet-T Backbone + 必要通道适配层 + YOLO11 Neck + YOLO11 OBB Head`，不继承第三章 FSPB/LPCF。
 - 更换 LSKNet-T Backbone 本身不算创新点；第四章创新点应由 C、D 构成。
-- 第一阶段只做纯 LSKNet-T baseline、结构适配和权重转换；不同时设计 C、D。
-- 第四章正式目标接受两数据集、四组消融、三随机种子，但执行顺序是先 DIOR-R 单种子 baseline，再单种子筛选 C/D，成立后再扩展正式实验。
+- LSKNet-T baseline、结构适配和混合权重初始化已经完成。OAC、FDF、OAC+FDF 及 Blend 是已完成但未达到最终组合目标的筛选路线，不再作为当前定稿 C/D。
+- 当前筛选路线为 `C-v2 = FDConv-Lite`、`D = FDF`，先运行 DIOR-R seed 42 的单 C 与 C+D；结果成立后再补三 seed 和第二数据集。尚无训练结果时不得把它们写成最终创新点。
+- 第四章正式目标接受两数据集、四组消融、三随机种子。组合模型应在主要指标上优于 baseline 和两个单模块，并争取 All mAP50 相对 baseline 提升约 1 个百分点。
 - 第四章首先与自己的 LSKNet-T baseline 做受控消融；跨章节结果只用于说明路线特点和复杂度-精度权衡，不用于不公平的绝对排名。
 
 ## 结果可信源
@@ -31,7 +32,7 @@
 1. [paper/ippr2026/main.pdf](paper/ippr2026/main.pdf) 和 [paper/ippr2026/main.tex](paper/ippr2026/main.tex)，用于第三章/小论文定稿结果。
 2. [thesis_chapter3_chapter4_consensus_for_codex.md](thesis_chapter3_chapter4_consensus_for_codex.md)，用于硕士论文第三章与第四章衔接方案。
 3. `weights/experiments/**/eval*.md` 原始评估记录。
-4. `runs/obb/**/results.csv` 和 checkpoint。
+4. `weights/checkpoints/` 中集中保存的 `best.pt`、`results.csv` 和 `args.yaml`。
 5. 历史 README 或聊天记录。
 
 如果 README 与 PDF 冲突，以 PDF 和原始评估记录为准；修正文档，不要为了叙事改实验结果。
@@ -84,7 +85,7 @@
 ## 服务器约定
 
 - `/home/ws` 是长期服务器根目录，数据集放 `/home/ws/datasets/<dataset-name>/`。
-- 未来新增 `/home/ws` 实验默认优先使用 `device=1`、`batch=-1`、`cache=ram`。
+- 第四章新增 `/home/ws` 实验统一使用 `device=1`、`batch=16`、`cache=ram`；历史配置中的 `batch=-1` 只用于还原当时实验。
 - 复现当前论文已定稿实验时，按论文协议固定：DIOR-R `batch=32, cache=RAM`；HRSID `batch=8, cache=disk`。
 - AutoDL 一次性多卡续训记录只用于历史追踪，不作为未来默认服务器配置。
 
@@ -94,3 +95,4 @@
 - 原始评估 md 不合并、不改写，除非发现路径或指标抄录错误。
 - 不跨 seed、跨数据集或跨划分拼接结果。
 - 普通训练输出权重仍应被 git 忽略；但 `weights/pretrained/` 中用于服务器复现的预训练和初始化权重允许随远程同步。
+- 训练完成后只把仍服务论文或当前实验对照的 `best.pt` 归档到 `weights/checkpoints/`；不要长期保留 `last.pt`、临时 `val*` 或失败筛选权重。

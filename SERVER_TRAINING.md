@@ -7,6 +7,6 @@
 快速原则：
 
 - 论文主实验看 `experiments/dior_official/` 和 `experiments/hrsid/`。
-- `/home/ws` 日常新增实验默认 `device=1`、`batch=-1`、`cache=ram`。
+- 第四章 `/home/ws` 新增实验统一 `device=1`、`batch=16`、`cache=ram`；旧配置中的 `batch=-1` 仅用于历史复现。
 - 复现论文表格时按 `paper/ippr2026/main.pdf`：DIOR-R official 使用 batch 32，HRSID-derived OBB 使用 batch 8。
 - 所有模型从同一个官方参考 checkpoint 独立起训，不从 A/B 的 `best.pt` 拼接续训。

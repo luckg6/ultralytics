@@ -17,7 +17,7 @@ LSKNet 面向遥感目标检测提出大选择核机制，强调遥感目标需�
 - 第三章：基于 YOLO11n-OBB，从 Neck 和 Head/预测端增强小目标细粒度特征传递与预测。
 - 第四章：基于 LSKNet-T，从 Backbone 特征提取源头增强复杂遥感场景的自适应感受野和上下文表达。
 
-LSKNet-T backbone 替换和必要通道适配只作为第四章基础架构选择，不作为本文创新点。第四章创新点只来自后续 C、D 两个模块。
+LSKNet-T backbone 替换和必要通道适配只作为第四章基础架构选择，不作为本文创新点。第四章创新点只来自最终经受控实验确认的 C、D 两个模块。
 
 ## 本地材料状态
 
@@ -80,7 +80,7 @@ LSKNet-T Backbone
 
 ## DIOR-R Official 单种子结果
 
-2026-07-29 已完成纯 LSKNet-T baseline 训练，输出目录为 `runs/obb/dior_official_lsknet_t_baseline/`。评估记录见 `experiments/chapter4/eval_lsknet_t_baseline_dior_official_test_2026-07-29.md`。
+2026-07-29 已完成纯 LSKNet-T baseline 训练。保留权重已整理到 `weights/checkpoints/chapter4/dior_official/seed42/baseline/best.pt`，评估记录见 `experiments/chapter4/eval_lsknet_t_baseline_dior_official_test_2026-07-29.md`。
 
 | Model | Params (M) | GFLOPs | All mAP50 | All mAP50:95 | Small mAP50 | Small mAP50:95 |
 |---|---:|---:|---:|---:|---:|---:|
@@ -113,10 +113,12 @@ python scripts/prepare_lsknet_yolo_init.py --model ultralytics/cfg/models/11/rem
 python scripts/train_obb.py --config experiments/chapter4/lsknet_t_baseline_dior_official_homews.yaml
 ```
 
-## 后续 C/D 约束
+## C/D 约束与当前状态
 
 - LSKNet-S 暂不作为第四章主方案，最多保留为后续骨干选择对比项。
 - C、D 首先与 LSKNet-T baseline 做内部消融，不以强行超过第三章 A+B 为设计目标。
 - C、D 不应简单重复 LSKNet 已有的大核上下文机制。
 - C、D 不应直接复制第三章 FSPB、LPCF 或完全相同的高分辨率预测分支。
 - Params、GFLOPs、FPS/latency 和显存占用必须如实记录，但不要求一定低于第三章。
+
+OAC、FDF、OAC+FDF 与 Blend 已完成第一轮筛选，但组合没有稳定优于单模块，因此不作为定稿 C/D。当前待验证路线为 `FDConv-Lite + FDF`，详见 `experiments/chapter4/README.md`；在训练结果产生前，它仍是候选而非论文结论。

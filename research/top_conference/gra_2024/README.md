@@ -10,7 +10,7 @@
 
 ## 为什么适合本项目
 
-GRA 直接面向 oriented object detection，提出 group-wise rotating 与 group-wise attention，用较轻量的方式增强方向敏感特征。当前 C-Dynamic 已经证明方向几何感知有一点正向收益，但幅度很小；GRA 可以作为 C 的第二版参考，把“方向感知”做得更贴近旋转目标本身。
+GRA 直接面向 oriented object detection，提出 group-wise rotating 与 group-wise attention，用较轻量的方式增强方向敏感特征。本项目曾据此实现第四章 OAC 方向校准候选。
 
 ## 可迁移方案
 
@@ -22,8 +22,7 @@ GRA 直接面向 oriented object detection，提出 group-wise rotating 与 grou
 
 ## 适合作为哪个实验
 
-- C 第二版候选：`C-GRA-Lite`。
-- 如果 A+C-Dynamic 小幅提升，可以进一步尝试 `A + C-GRA-Lite`。
+- 第三章 C-GRA-Lite 与第四章 OAC 的历史依据。OAC 三 seed 有部分正向，但 OAC+FDF 组合未达到最终要求，当前不再作为定稿 C。
 
 ## 风险
 

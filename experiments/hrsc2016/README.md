@@ -1,5 +1,7 @@
 # HRSC2016 消融实验
 
+> 状态：已完成并冻结的快速筛选记录。AB 低于 baseline，且 test 小目标数量有限，不进入当前论文主表，也没有待执行训练。
+
 ## 数据与转换
 
 - 原始下载包：`C:/E/datasets/HRSC2016_dataset.zip.zip`。

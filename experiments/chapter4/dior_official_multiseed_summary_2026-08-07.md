@@ -52,4 +52,4 @@ The result should not be overstated as a uniformly dominant all-scale improvemen
 
 > OAC+FDF provides the strongest average small-object performance and the best average mAP50:95, while OAC alone is slightly stronger for average all-object mAP50. This indicates that the two modules are useful but their interaction still has seed-dependent optimization variance.
 
-For the next stage, keep OAC and FDF as the current C/D candidates, but avoid claiming that the combined model is strictly best on every metric and every seed.
+This route is retained as a completed screening record, not as the current final C/D pair. Under the stricter Chapter 4 criterion, the combination should outperform the baseline and both single modules on the principal metrics and should aim for about a one-point All mAP50 gain. OAC+FDF does not meet that criterion: its mean All mAP50 gain over baseline is only 0.07 point and OAC alone is higher. The next screening route therefore replaces OAC with FDConv-Lite while retaining FDF as the provisional D candidate.

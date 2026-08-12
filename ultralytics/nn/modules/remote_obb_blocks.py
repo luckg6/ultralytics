@@ -16,6 +16,7 @@ __all__ = (
     "C3k2PKI",
     "DirectionalGeoAttention",
     "DirectionalGeoPlusAttention",
+    "FDConvLiteAdapter",
     "FreqDetailFusion",
     "GRALiteAttention",
     "LSKBlock",
@@ -517,6 +518,64 @@ class FreqDetailFusion(nn.Module):
         spatial = self.detail_gate(torch.cat((highpass.mean(1, keepdim=True), highpass.amax(1, keepdim=True)), dim=1))
         lateral = lateral + torch.tanh(self.detail_scale) * highpass * spatial * self.lateral_channel(highpass)
         return torch.cat((deep, lateral), dim=1)
+
+
+class FDConvLiteAdapter(nn.Module):
+    """FDConv-inspired lightweight frequency-dynamic adapter for Chapter 4.
+
+    The full FDConv implementation dynamically modulates convolution kernels in
+    the frequency domain. This dependency-free adapter keeps the same motivation
+    but uses a compact residual form suitable for the LSKNet-T-to-YOLO interface:
+    Fourier amplitude statistics route three depthwise branches and provide a
+    channel gate, while a zero-initialized residual scale preserves the hybrid
+    baseline at initialization.
+    """
+
+    def __init__(self, c1: int, expansion: float = 0.25, max_mid: int = 128):
+        """Initialize frequency-routed depthwise branches for one feature scale."""
+        super().__init__()
+        c_mid = max(min(int(c1 * expansion), max_mid), 32)
+        c_gate = max(c_mid // 4, 16)
+        self.reduce = ConvBNAct(c1, c_mid, 1, p=0)
+        self.dw3 = nn.Conv2d(c_mid, c_mid, 3, padding=1, groups=c_mid, bias=False)
+        self.dw5 = nn.Conv2d(c_mid, c_mid, 5, padding=2, groups=c_mid, bias=False)
+        self.dw7 = nn.Conv2d(c_mid, c_mid, 7, padding=6, dilation=2, groups=c_mid, bias=False)
+        self.branch_norm = nn.BatchNorm2d(c_mid)
+        self.branch_act = nn.SiLU(inplace=True)
+        self.freq_router = nn.Sequential(
+            nn.Conv2d(c_mid, c_gate, 1, bias=True),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(c_gate, 3, 1, bias=True),
+        )
+        self.freq_channel = nn.Sequential(
+            nn.Conv2d(c_mid, c_gate, 1, bias=True),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(c_gate, c_mid, 1, bias=True),
+            nn.Sigmoid(),
+        )
+        self.spatial_gate = nn.Sequential(nn.Conv2d(2, 1, 7, padding=3, bias=True), nn.Sigmoid())
+        self.restore = ConvBNAct(c_mid, c1, 1, p=0)
+        self.softmax = nn.Softmax(dim=1)
+        self.gamma = nn.Parameter(torch.zeros(1))
+
+    @staticmethod
+    def _frequency_descriptor(x: torch.Tensor) -> torch.Tensor:
+        """Return per-channel Fourier amplitude statistics as a 1x1 descriptor."""
+        spectrum = torch.fft.rfft2(x.float(), norm="ortho")
+        descriptor = torch.log1p(spectrum.abs()).mean(dim=(-2, -1), keepdim=True)
+        return descriptor.to(dtype=x.dtype)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply frequency-routed multi-kernel calibration with identity start."""
+        y = self.reduce(x)
+        freq = self._frequency_descriptor(y)
+        weights = self.softmax(self.freq_router(freq)).unsqueeze(2)
+        branches = torch.stack((self.dw3(y), self.dw5(y), self.dw7(y)), dim=1)
+        dynamic = (branches * weights).sum(dim=1)
+        dynamic = self.branch_act(self.branch_norm(dynamic))
+        pooled = torch.cat((dynamic.mean(1, keepdim=True), dynamic.amax(1, keepdim=True)), dim=1)
+        dynamic = dynamic * self.freq_channel(freq) * self.spatial_gate(pooled)
+        return x + torch.tanh(self.gamma) * self.restore(dynamic)
 
 
 class DirectionalGeoAttention(nn.Module):

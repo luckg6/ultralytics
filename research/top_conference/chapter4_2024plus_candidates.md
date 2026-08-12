@@ -34,7 +34,7 @@ DIOR-R official test：
 |---|---|---|---|---|
 | GRA-style directional calibration | GRA: Detecting Oriented Objects through Group-wise Rotating and Attention | ECCV 2024 | 本地已有 `research/external_repos/GRA` | 针对旋转目标方向变化，适合做 C：方向敏感特征校准 |
 | Frequency-aware detail fusion | FreqFusion: Frequency-Aware Feature Fusion for Dense Image Prediction | arXiv 2024 / TPAMI 项目代码 | 本地已有 `research/external_repos/FreqFusion` | 适合做 D：浅深层融合时补边界和高频细节 |
-| FDConv-style frequency dynamic convolution | Frequency Dynamic Convolution for Dense Image Prediction | CVPR 2025 | 本地已有 `research/external_repos/FDConv` | 可作为 D 的较重备选：频域动态卷积增强 backbone/adapter 特征 |
+| FDConv-style frequency dynamic convolution | Frequency Dynamic Convolution for Dense Image Prediction | CVPR 2025 | 本地已有 `research/external_repos/FDConv` | 当前 C-v2 候选：频域动态卷积增强 backbone/adapter 特征 |
 | Angle/boundary representation | Rethinking Boundary Discontinuity Problem for Oriented Object Detection | CVPR 2024 | 需进一步下载/核对代码 | 可作为 D 或 loss/head 备选，但要避免和现有 ProbIoU/OBB loss 重复 |
 | Point-axis geometry | Projecting Points to Axes: Oriented Object Detection via Point-Axis Representation | ECCV 2024 | 官网有 paper/code 链接，尚未本地化 | 几何辅助监督备选，工程量偏大 |
 | CANConv | Content-Adaptive Non-Local Convolution for Remote Sensing Pansharpening | CVPR 2024 | 源码未下载成功；原任务是 pansharpening | 低优先级。遥感属性强，但迁移到检测需要额外论证 |
@@ -127,24 +127,39 @@ Upsample(high-level feature) + lateral low-level feature
 - DIOR-R official 单种子结果显示小目标 mAP50 / mAP50:95 分别提升 +1.64 / +1.32，全尺度 mAP50:95 微升 +0.04，但全尺度 mAP50 下降 -0.13。FDF 方向有效但还不是四项全优。
 - 如果后续 C 不能补回全尺度 mAP50，可基于已补齐的 FreqFusion 源码再升级为更接近原论文的 FDF-plus。
 
-## 备选 D：FDConv-style 频域动态卷积
+## 已实现新方向 C-v2：FDConv-Lite 频域动态适配
 
 FDConv 是 CVPR 2025 工作，本地源码已齐。其思路是让动态卷积在 Fourier domain 中学习频率多样的权重，并使用 Kernel Spatial Modulation 与 Frequency Band Modulation。
 
-第四章落点建议：
+在 OAC+FDF 与 OAC+FDF-Blend 未达到“组合模型稳定优于 baseline 与任一单模块、且 All mAP50 提升约 1 点”的目标后，FDConv 被改为新的 C 方向，而不是继续作为 D。当前实现不直接迁移 mmdet 版本，而是在 LSKNet-T 的 P3/P4/P5 通道适配层后加入轻量 `FDConvLiteAdapter`：
 
-- 替换 adapter 后的 3x3 Conv 或 neck 中少量 C3k2 内部卷积。
-- 不全网替换，先在 P3/P4 adapter 后做轻量测试。
+```text
+LSKNet-T C3/C4/C5 output
+-> 1x1 channel adapter
+-> FDConv-Lite frequency-dynamic adapter on P3/P4/P5
+-> original YOLO11 Neck or FDF-enhanced top-down neck
+-> original YOLO11 OBB Head
+```
+
+实现和配置：
+
+- 模块：`ultralytics/nn/modules/remote_obb_blocks.py` 中的 `FDConvLiteAdapter`。
+- 单 C 模型：`ultralytics/cfg/models/11/remote_obb/yolo11n-obb-lsknet-t-fdconv.yaml`。
+- C+D 模型：`ultralytics/cfg/models/11/remote_obb/yolo11n-obb-lsknet-t-fdconv-fdf.yaml`。
+- 本地配置：`experiments/chapter4/lsknet_t_fdconv_dior_official.yaml`、`experiments/chapter4/lsknet_t_fdconv_fdf_dior_official.yaml`。
+- `/home/ws` 配置：`experiments/chapter4/lsknet_t_fdconv_dior_official_homews.yaml`、`experiments/chapter4/lsknet_t_fdconv_fdf_dior_official_homews.yaml`，固定 `batch=16`、`device=1`、`cache=ram`。
+- 初始化报告：`experiments/chapter4/lsknet_t_fdconv_init_report.md`、`experiments/chapter4/lsknet_t_fdconv_fdf_init_report.md`。
 
 优点：
 
 - 源码已齐；
 - 2025 顶会；
 - 与 LSKNet 的大核空间选择不同，强调频率多样的动态滤波。
+- 与第三章 A/B 位置不同：只在 backbone 输出适配之后做频域动态校准，不新增 P2、不替换第三章 LPCF。
 
 风险：
 
-- 原版 FDConv 依赖 mmdet 风格，直接迁移需要瘦身；
+- 当前是 FDConv 启发的轻量 adapter，不是官方完整 FDConv；
 - 参数和 GFLOPs 可能进一步上升，需如实报告。
 
 ## 低优先级：CANConv
@@ -169,7 +184,7 @@ research/external_repos/CANConv/
 https://github.com/duanyll/CANConv
 ```
 
-## 当前建议路线
+## 当前执行路线
 
 ```text
 第一优先级：
@@ -178,7 +193,8 @@ https://github.com/duanyll/CANConv
   已完成 C+D = OAC+FDF 三 seed DIOR-R official 评估；组合模型在平均 Small mAP50、Small mAP50:95 和 All mAP50:95 上最好，但 All mAP50 平均值由 OAC 单模块最高，且 seed 3407 的组合全尺度指标存在回落
 
 第二优先级：
-  若 FreqFusion 材料迟迟不齐，则 D 改为 FDConv-lite，用本地 FDConv 材料做频域动态卷积轻量适配
+  OAC+FDF-Blend 已验证未达到严格目标，当前改为 C-v2 = FDConv-Lite
+  先跑 seed42 的 FDConv-Lite 与 FDConv-Lite+FDF；若组合不能优于 baseline、FDF 和 FDConv-Lite 单模块，则继续换 C/D 方向
 
 第三优先级：
   角度连续表示 / Point-Axis / CANConv 作为论文讨论或后续备选，不先实现

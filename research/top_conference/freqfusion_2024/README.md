@@ -13,16 +13,11 @@ YOLO 的 neck 依赖上采样和 concat 融合。遥感小目标容易在上采�
 
 ## 可迁移方案
 
-优先级从高到低：
-
-1. 做 `FreqFuseLite`，替换 neck 中 P4->P3 或 P3->P2 的一次上采样融合。
-2. 只保留高通增强和轻量低通门控，不引入 offset resampling，避免复杂依赖。
-3. 若 `A+C` 有效，再尝试 `A+FreqFuseLite`，观察小目标 mAP50-95 是否继续上升。
+第四章已实现轻量 `FreqDetailFusion`，替换原 top-down P5->P4、P4->P3 两次融合入口，保留 OBB Head 和三尺度预测。该实现借鉴频率细节与融合一致性动机，不完整迁移官方 ALPF/AHPF/offset resampling。
 
 ## 适合作为哪个实验
 
-- 新 B 候选：`B-FreqFuse`。
-- 也可作为 A 的增强版：`A-FreqP2`，但论文消融时要和 A-P2 区分。
+- 第四章 D 候选：`FDF`。OAC+FDF 三 seed 组合未达到最终要求；当前暂保留 FDF，与 FDConv-Lite 重新测试互补性。
 
 ## 风险
 

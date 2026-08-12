@@ -1,8 +1,19 @@
 # 第四章实验入口
 
-第四章是与第三章并列互补的技术路线，不再定位为解决第三章计算量上升的问题，也不要求最终模型必须全面超过第三章 A+B。
+更新日期：2026-08-12
 
-第四章当前基础结构为：
+第四章与第三章是并列互补路线，不定位为解决第三章计算量上升，也不要求与第三章 A+B 做同容量下的绝对排名。第四章首先完成自身受控消融：
+
+```text
+LSKNet-T baseline
+LSKNet-T + C
+LSKNet-T + D
+LSKNet-T + C + D
+```
+
+LSKNet-T backbone 和必要通道适配属于基础架构选择，不算创新；最终 C、D 必须相对该 baseline 分别有效，组合模型还应优于两个单模块。当前研究目标是组合 All mAP50 相对 baseline 提升约 1 个百分点，并在主要全尺度与小目标指标上形成稳定互补。
+
+## 基础结构与协议
 
 ```text
 LSKNet-T Backbone
@@ -11,295 +22,89 @@ LSKNet-T Backbone
 + original YOLO11 OBB Head
 ```
 
-该 baseline 不继承第三章的 FSPB 和 LPCF。LSKNet-T 与通道适配只作为第四章基础架构，不作为创新点；后续 C、D 才是第四章创新模块。
+该结构不继承第三章 FSPB、LPCF 或 P2 检测分支。LSKNet-T 使用官方 DOTA checkpoint 初始化，兼容的 Neck/Head 参数从 `yolo11n-obb.pt` 加载，新增层随机初始化。
 
-第四章定位为：基于遥感专用自适应感受野骨干的精度增强型旋转目标检测方法。
+| 环境 | 数据 | batch | device | cache | epochs |
+|---|---|---:|---:|---|---:|
+| 本地筛选 | `DIOR-official.yaml` | 4 | 0 | disk | 100 |
+| `/home/ws` 第四章 | `DIOR-official-homews.yaml` | 16 | 1 | RAM | 100 |
 
-## 与第三章的关系
-
-第三章关注轻量 YOLO11n-OBB 上的 Neck/Head 小目标增强，核心是 FSPB 和 LPCF。
-
-第四章关注 Backbone 特征提取阶段，研究遥感专用自适应感受野、长程空间关系和复杂背景表达。
-
-跨章节结果只用于说明两条路线的特点和权衡，不能作为同容量公平排名：
-
-- 第三章：较低模型复杂度下的小目标检测增强路线；
-- 第四章：容量更高、精度优先的复杂场景特征提取路线。
-
-## 第一阶段配置
-
-| 环境 | 配置 | 说明 |
-|---|---|---|
-| 本地 | `experiments/chapter4/lsknet_t_baseline_dior_official.yaml` | `batch=4`、`cache=disk`、`device=0` |
-| `/home/ws` | `experiments/chapter4/lsknet_t_baseline_dior_official_homews.yaml` | `batch=16`、`cache=ram`、`device=1` |
-
-首次训练前先生成混合初始化权重：
-
-```bash
-python scripts/prepare_lsknet_yolo_init.py --model ultralytics/cfg/models/11/remote_obb/yolo11n-obb-lsknet-t-baseline.yaml
-```
-
-然后开始训练：
-
-```bash
-python scripts/train_obb.py --config experiments/chapter4/lsknet_t_baseline_dior_official.yaml
-```
-
-服务器上使用：
+初始化与 baseline 入口：
 
 ```bash
 python scripts/prepare_lsknet_yolo_init.py --model ultralytics/cfg/models/11/remote_obb/yolo11n-obb-lsknet-t-baseline.yaml
 python scripts/train_obb.py --config experiments/chapter4/lsknet_t_baseline_dior_official_homews.yaml
 ```
 
-## 初始化记录
+## Baseline 结果
 
-- LSKNet-T 四个 stage 输出：stride `4/8/16/32`，通道 `32/64/160/256`。
-- DOTA checkpoint 的 `backbone.*` 权重加载成功率：478/478。
-- YOLO11n-OBB neck/head 兼容权重加载：304/355。
-- 随机初始化模块主要为 P3/P4 通道适配层和分类分支。
-- 初始化报告：`experiments/chapter4/lsknet_t_baseline_init_report.md`。
-
-## 已完成结果
-
-### DIOR-R official single-seed baseline
-
-- Run directory: `runs/obb/dior_official_lsknet_t_baseline/`
-- 评估记录：`experiments/chapter4/eval_lsknet_t_baseline_dior_official_test_2026-07-29.md`
-- 训练参数：`device=1`、`batch=16`、`cache=ram`、`epochs=100`、`seed=42`
-- 训练期最优 val mAP50-95：0.66724，出现在 epoch 99。
-- Test 指标如下，精度为百分数：
+DIOR-R official seed 42 test：
 
 | Model | Params (M) | GFLOPs | All mAP50 | All mAP50:95 | Small mAP50 | Small mAP50:95 |
 |---|---:|---:|---:|---:|---:|---:|
-| YOLO11n-OBB baseline | 2.658 | 6.6 | 71.11 | 54.31 | 27.32 | 17.96 |
 | Chapter 3 A+B | 2.740 | 10.7 | 72.25 | 54.55 | 29.20 | 20.42 |
 | LSKNet-T baseline | 5.728 | 18.7 | 73.72 | 56.88 | 27.69 | 18.15 |
 
-相对于第三章 A+B，LSKNet-T baseline 参数量约为 2.09 倍，GFLOPs 约为 1.75 倍；All mAP50:95 高 2.33，但 Small mAP50:95 低 2.27。因此该结果不能作为“LSKNet-T 优于第三章 A+B”或“LSKNet-T backbone 优于 YOLO11 原生 backbone”的证据。
+这里只能确认混合结构接入成功、能够稳定收敛且具有全尺度检测潜力。模型容量差异明显，不能据此声称 LSKNet-T backbone 公平优于第三章方法或原生 backbone。
 
-当前可确认的结论：
+三 seed baseline 均值见 `dior_official_multiseed_summary_2026-08-07.md`：All mAP50 / mAP50:95 为 `73.61 / 56.77`，Small mAP50 / mAP50:95 为 `28.25 / 18.47`。
 
-1. LSKNet-T 的 DOTA 权重和 YOLO11 Neck/OBB Head 混合结构接入成功；
-2. 新 baseline 可以稳定训练和收敛；
-3. LSKNet-T baseline 具有较强的全尺度检测潜力；
-4. 小目标检测能力仍低于第三章 A+B；
-5. 该 baseline 可以继续作为第四章候选基础模型。
+## 已完成筛选
 
-### DIOR-R official single-seed D-FDF
+### OAC、FDF 与 OAC+FDF
 
-- Run directory: `runs/obb/dior_official_lsknet_t_fdf/`
-- 评估记录：`experiments/chapter4/eval_lsknet_t_fdf_dior_official_test_2026-07-29.md`
-- 训练参数：`device=1`、`batch=16`、`cache=ram`、`epochs=100`、`seed=42`
-- Test 指标如下，精度为百分数：
+OAC 是方向感知校准候选，FDF 是频率细节融合候选。三 seed 平均结果如下：
 
-| Model | Params (M) | GFLOPs | All mAP50 | All mAP50:95 | Small mAP50 | Small mAP50:95 |
-|---|---:|---:|---:|---:|---:|---:|
-| LSKNet-T baseline | 5.728 | 18.7 | 73.72 | 56.88 | 27.69 | 18.15 |
-| LSKNet-T + FDF | 5.758 | 18.7 | 73.59 | 56.92 | 29.33 | 19.47 |
+| Variant | All mAP50 | All mAP50:95 | Small mAP50 | Small mAP50:95 |
+|---|---:|---:|---:|---:|
+| Baseline | 73.61 | 56.77 | 28.25 | 18.47 |
+| FDF | 73.63 | 56.84 | 29.22 | 19.17 |
+| OAC | **73.85** | 56.82 | 29.25 | 19.28 |
+| OAC+FDF | 73.68 | **56.90** | **29.54** | **19.51** |
 
-相对于 LSKNet-T baseline，FDF 的小目标 mAP50 / mAP50:95 分别提升 +1.64 / +1.32，全尺度 mAP50:95 微升 +0.04，但全尺度 mAP50 下降 -0.13。因此 FDF 是有价值的 D 候选，尤其能补 LSKNet-T baseline 的小目标不足，但还不是四项全优的单模块结果。
+OAC+FDF 的小目标和 All mAP50:95 均值有提升，但 All mAP50 仅比 baseline 高 `0.07`，且组合不稳定优于单模块。它是有效的历史筛选结果，不是第四章定稿 C/D。原始记录：
 
-### DIOR-R official single-seed C-OAC
+- `eval_lsknet_t_oac_dior_official_test_2026-07-29.md`
+- `eval_lsknet_t_fdf_dior_official_test_2026-07-29.md`
+- `eval_lsknet_t_oac_fdf_dior_official_test_2026-08-03.md`
+- `dior_official_multiseed_summary_2026-08-07.md`
 
-- Run directory: `runs/obb/dior_official_lsknet_t_oac/`
-- 评估记录：`experiments/chapter4/eval_lsknet_t_oac_dior_official_test_2026-07-29.md`
-- 训练参数：`device=1`、`batch=16`、`cache=ram`、`epochs=100`、`seed=42`
-- Test 指标如下，精度为百分数：
+### OAC+FDF-Blend
 
-| Model | Params (M) | GFLOPs | All mAP50 | All mAP50:95 | Small mAP50 | Small mAP50:95 |
-|---|---:|---:|---:|---:|---:|---:|
-| LSKNet-T baseline | 5.728 | 18.7 | 73.72 | 56.88 | 27.69 | 18.15 |
-| LSKNet-T + FDF | 5.758 | 18.7 | 73.59 | 56.92 | 29.33 | 19.47 |
-| LSKNet-T + OAC | 5.813 | 18.9 | 74.02 | 56.75 | 29.62 | 19.47 |
+Blend 版保留原 top-down 主路径并以零初始化残差混合 FDF，目的是降低组合的 seed 波动。三 seed 结果仍未满足“组合优于 baseline 与任一单模块”的要求，因此停止扩展。数据保留在 `dior_official_multiseed_blend_eval_2026-08-07.md` 和同名 CSV 中。
 
-相对于 LSKNet-T baseline，OAC 的全尺度 mAP50 提升 +0.30，小目标 mAP50 / mAP50:95 分别提升 +1.93 / +1.32，但全尺度 mAP50:95 下降 -0.13。OAC 与 FDF 的收益侧重点不同：OAC 更能补回 mAP50，FDF 更稳住 mAP50:95，因此已配置 C+D 组合用于验证二者收益能否合并。
+## 当前筛选路线
 
-### DIOR-R official single-seed C+D-OAC-FDF
+当前仅把以下名称视为待验证候选，不能在论文中提前称为最终 C/D：
 
-- Run directory: `runs/obb/dior_official_lsknet_t_oac_fdf/`
-- 评估记录：`experiments/chapter4/eval_lsknet_t_oac_fdf_dior_official_test_2026-08-03.md`
-- 训练参数：`device=1`、`batch=16`、`cache=ram`、`epochs=100`、`seed=42`
-- 训练期最优 val mAP50-95：0.66789，出现在 epoch 100。
-- Test 指标如下，精度为百分数：
+- `C-v2 = FDConv-Lite`：在 LSKNet-T 的 P3/P4/P5 通道适配后加入频域动态 adapter。
+- `D = FDF`：保留第一轮中对小目标有效的 top-down 频率细节融合。
+- `C+D = FDConv-Lite + FDF`。
 
-| Model | Params (M) | GFLOPs | All mAP50 | All mAP50:95 | Small mAP50 | Small mAP50:95 |
-|---|---:|---:|---:|---:|---:|---:|
-| LSKNet-T baseline | 5.728 | 18.7 | 73.72 | 56.88 | 27.69 | 18.15 |
-| LSKNet-T + FDF | 5.758 | 18.7 | 73.59 | 56.92 | 29.33 | 19.47 |
-| LSKNet-T + OAC | 5.813 | 18.9 | 74.02 | 56.75 | 29.62 | 19.47 |
-| LSKNet-T + OAC + FDF | 5.842 | 18.9 | 74.26 | 57.37 | 29.67 | 19.59 |
+模型规模：FDConv-Lite 为 `5.832M / 19.2 GFLOPs`，FDConv-Lite+FDF 为 `5.862M / 19.2 GFLOPs`。初始化报告分别为 `lsknet_t_fdconv_init_report.md` 和 `lsknet_t_fdconv_fdf_init_report.md`。
 
-相对于 LSKNet-T baseline，OAC+FDF 四项 test 指标全部提升：All mAP50 / mAP50:95 分别提升 +0.54 / +0.49，小目标 mAP50 / mAP50:95 分别提升 +1.98 / +1.44。该组合补回了单独 OAC 的 All mAP50:95 下降，同时保留并小幅增强了 FDF/OAC 在小目标上的收益。因此当前 C/D 组合初步成立，适合进入第二数据集和多 seed 验证阶段。
-
-### DIOR-R official multi-seed configs
-
-DIOR-R official 的 `seed=42` 四组已经完成；补充 `seed=3407` 和 `seed=2026` 的 `/home/ws` 配置与命令已集中记录在：
-
-```text
-experiments/chapter4/dior_official_multiseed_homews_commands.md
-```
-
-这些配置统一使用 `batch=16`、`device=1`、`cache=ram`，run name 均带 `s3407` 或 `s2026`，不会覆盖已有 seed-42 结果。
-
-三 seed 评估已经完成，汇总记录见：
-
-```text
-experiments/chapter4/dior_official_multiseed_summary_2026-08-07.md
-```
-
-当前结论：OAC+FDF 在三 seed 平均意义下取得最佳 Small mAP50、Small mAP50:95 和 All mAP50:95，但 All mAP50 平均值由 OAC 单模块最高。组合模型不是每个 seed 的全指标第一，尤其 seed 3407 上全尺度指标有回落，因此后续论文或硕士论文中应表述为“小目标和 mAP50:95 更优，存在一定 seed 波动”，不要写成“全指标稳定最优”。
-
-## 后续 C/D 设计原则
-
-第四章后续 C、D 首先与自己的 LSKNet-T baseline 做消融，而不是为了强行超过第三章 A+B 来设计。
-
-2024+ 顶会候选改进点已记录在 `research/top_conference/chapter4_2024plus_candidates.md`。当前建议优先考虑：
-
-- C：基于 ECCV 2024 GRA 思路的 LSKNet adapter 后方向感知特征校准；
-- D：基于 FreqFusion/FDConv 思路的频率感知细节融合或频域动态卷积轻量适配。
-
-### 已配置：C-OAC
-
-OAC 是 GRA 启发的方向感知特征校准模块，插入在 LSKNet-T 输出通道适配之后、原始 YOLO11 neck 之前。它使用四个固定方向的 masked depthwise 分支和输入自适应 routing，显式增强旋转方向响应；残差缩放为零初始化，训练起点保持接近 LSKNet-T baseline。
-
-| 环境 | 配置 | 说明 |
-|---|---|---|
-| 本地 | `experiments/chapter4/lsknet_t_oac_dior_official.yaml` | `batch=4`、`cache=disk`、`device=0` |
-| `/home/ws` | `experiments/chapter4/lsknet_t_oac_dior_official_homews.yaml` | `batch=16`、`cache=ram`、`device=1` |
-
-训练前已生成专属初始化权重：
-
-```text
-weights/pretrained/lsknet/yolo11n_obb_lsknet_t_oac_hybrid_init.pt
-```
-
-初始化核验：
-
-- LSKNet-T DOTA backbone keys loaded: 478/478；
-- YOLO11n-OBB compatible neck/head keys loaded: 304/355；
-- Params: 5.849M；
-- GFLOPs: 19.1。
-
-本地训练：
+先运行 seed 42 筛选：
 
 ```bash
-python scripts/train_obb.py --config experiments/chapter4/lsknet_t_oac_dior_official.yaml
+cd /home/ws/ultralytics && source .venv/bin/activate && \
+python scripts/train_obb.py --config experiments/chapter4/lsknet_t_fdconv_dior_official_homews.yaml && \
+python scripts/train_obb.py --config experiments/chapter4/lsknet_t_fdconv_fdf_dior_official_homews.yaml
 ```
 
-`/home/ws` 训练：
+训练后持久化评估：
 
 ```bash
-python scripts/train_obb.py --config experiments/chapter4/lsknet_t_oac_dior_official_homews.yaml
+python scripts/evaluate_chapter4_multiseed.py --combo fdconv_fdf --data ultralytics/cfg/datasets/DIOR-official-homews.yaml --split test --imgsz 640 --device 1 --workers 8
 ```
 
-### 已配置：D-FDF
+只有 seed 42 同时支持单 C 和 C+D，且组合达到预期趋势后，才补齐三个 seed、第二数据集及正式四组消融配置。
 
-FDF 是 FreqFusion 启发的轻量频率细节融合模块，用于替换 LSKNet-T baseline 原 top-down neck 中的两次 `Upsample + Concat`。它保留原始 YOLO11 OBB Head，不加入第三章 FSPB/LPCF，也不新增 P2 检测分支。
+## 设计与报告边界
 
-| 环境 | 配置 | 说明 |
-|---|---|---|
-| 本地 | `experiments/chapter4/lsknet_t_fdf_dior_official.yaml` | `batch=4`、`cache=disk`、`device=0` |
-| `/home/ws` | `experiments/chapter4/lsknet_t_fdf_dior_official_homews.yaml` | `batch=16`、`cache=ram`、`device=1` |
+- C、D 不得简单重复 LSKNet 的大核选择机制，也不复制第三章 FSPB/LPCF。
+- 同一数据集内四组实验共享 split、epochs、batch、seed、初始化、增强、NMS 和评估协议。
+- 最终至少报告 Params、GFLOPs、FPS、延迟、显存和全尺度/小目标 mAP。
+- 小目标口径为 `wh < 1024 px^2`，属于项目诊断指标，不等同于 COCO `AP_S`。
+- 跨章节比较只说明“轻量小目标增强”和“容量更高的精度优先路线”的权衡，不写成公平绝对排名。
 
-训练前已生成专属初始化权重：
-
-```text
-weights/pretrained/lsknet/yolo11n_obb_lsknet_t_fdf_hybrid_init.pt
-```
-
-初始化核验：
-
-- LSKNet-T DOTA backbone keys loaded: 478/478；
-- YOLO11n-OBB compatible neck/head keys loaded: 304/355；
-- 初始化 dry-run Params/GFLOPs: 5.794M / 19.0；
-- 已训练 checkpoint 的 evaluation summary: 5.758M / 18.7 GFLOPs。
-
-本地训练：
-
-```bash
-python scripts/train_obb.py --config experiments/chapter4/lsknet_t_fdf_dior_official.yaml
-```
-
-`/home/ws` 训练：
-
-```bash
-python scripts/train_obb.py --config experiments/chapter4/lsknet_t_fdf_dior_official_homews.yaml
-```
-
-### 已配置：C+D-OAC-FDF
-
-OAC+FDF 是第四章第一版组合实验：OAC 仍放在 LSKNet-T 三个输出适配层之后，用于方向感知特征校准；FDF 仍只替换原 top-down neck 中两次高低层融合入口。组合版不继承第三章 FSPB/LPCF，不新增 P2 分支，OBB Head 保持原三尺度预测。
-
-| 环境 | 配置 | 说明 |
-|---|---|---|
-| 本地 | `experiments/chapter4/lsknet_t_oac_fdf_dior_official.yaml` | `batch=4`、`cache=disk`、`device=0` |
-| `/home/ws` | `experiments/chapter4/lsknet_t_oac_fdf_dior_official_homews.yaml` | `batch=16`、`cache=ram`、`device=1` |
-
-训练前已生成专属初始化权重：
-
-```text
-weights/pretrained/lsknet/yolo11n_obb_lsknet_t_oac_fdf_hybrid_init.pt
-```
-
-初始化核验：
-
-- LSKNet-T DOTA backbone keys loaded: 478/478；
-- YOLO11n-OBB compatible neck/head keys loaded: 304/355；
-- 初始化 dry-run Params/GFLOPs: 5.878M / 19.1；
-- `YOLO(...)` 模型 YAML 和初始化 checkpoint 均可正常加载。
-
-本地训练：
-
-```bash
-python scripts/train_obb.py --config experiments/chapter4/lsknet_t_oac_fdf_dior_official.yaml
-```
-
-`/home/ws` 训练：
-
-```bash
-python scripts/train_obb.py --config experiments/chapter4/lsknet_t_oac_fdf_dior_official_homews.yaml
-```
-
-### 已配置：C+D v2-OAC-FDF-Blend
-
-OAC+FDF-Blend 是针对多 seed 结果中新组合全尺度指标波动而增加的稳健组合版。它保留 OAC，但不再让 FDF 完全替换原始 top-down 融合；每一级 top-down 融合同时保留原 `Upsample + Concat + C3k2` 主路径，并增加一条 `FDF + C3k2` 辅助路径，最后用零初始化 `ResidualFeatureBlend` 融合。训练起点更接近原 OAC 主路径，目标是减少 seed 3407 上出现的 all-object mAP 回落，同时保留 FDF 对小目标的细节收益。
-
-- Model YAML：`ultralytics/cfg/models/11/remote_obb/yolo11n-obb-lsknet-t-oac-fdf-blend.yaml`
-- 初始化权重：`weights/pretrained/lsknet/yolo11n_obb_lsknet_t_oac_fdf_blend_hybrid_init.pt`
-- 初始化报告：`experiments/chapter4/lsknet_t_oac_fdf_blend_init_report.md`
-- 模型规模：`6.022M` 参数，`19.9` GFLOPs at 640
-
-| 环境 | 配置文件 | 关键设置 |
-| --- | --- | --- |
-| 本地 | `experiments/chapter4/lsknet_t_oac_fdf_blend_dior_official.yaml` | `batch=4`、`cache=disk`、`device=0` |
-| `/home/ws` | `experiments/chapter4/lsknet_t_oac_fdf_blend_dior_official_homews.yaml` | `batch=16`、`cache=ram`、`device=1` |
-
-本地训练：
-
-```bash
-python scripts/train_obb.py --config experiments/chapter4/lsknet_t_oac_fdf_blend_dior_official.yaml
-```
-
-`/home/ws` 服务器训练：
-
-```bash
-python scripts/train_obb.py --config experiments/chapter4/lsknet_t_oac_fdf_blend_dior_official_homews.yaml
-```
-
-C、D 应围绕第四章自己的问题展开，例如：
-
-- LSKNet-T baseline 对小目标细粒度信息利用不足；
-- 旋转目标方向和几何特征建模不足；
-- 浅层细节与深层大感受野语义之间交互不足；
-- 复杂背景下类别判别或旋转框定位不足。
-
-C、D 不应简单重复 LSKNet 已有的大核上下文机制，也不要直接复制第三章 FSPB、LPCF 或再增加一个完全相同的高分辨率预测分支。
-
-第四章成立的核心条件：
-
-- C 单独相对 LSKNet-T baseline 稳定提升；
-- D 单独相对 LSKNet-T baseline 稳定提升；
-- C+D 优于 LSKNet-T baseline；
-- 主要提升在两个数据集和多随机种子下具有稳定性；
-- Params、GFLOPs、FPS、延迟和显存完整报告，但不预设必须下降。
+服务器完整命令索引见 `dior_official_multiseed_homews_commands.md`，候选来源与迁移依据见 `../../research/top_conference/chapter4_2024plus_candidates.md`。

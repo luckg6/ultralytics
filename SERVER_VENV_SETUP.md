@@ -10,10 +10,10 @@
 /home/ws/datasets/HRSID-YOLO
 ```
 
-如果只是继续日常实验，`/home/ws` 服务器默认使用：
+第四章继续新增实验时，`/home/ws` 服务器统一使用：
 
 - `device=1`
-- `batch=-1`
+- `batch=16`
 - `cache=ram`
 
 如果要复现当前 IPPR 2026 论文表格，则按论文固定协议：
@@ -121,4 +121,4 @@ python scripts/evaluate_obb.py \
 - 如果导入到了官方 `site-packages/ultralytics`，重新执行 `pip install -e .`。
 - 如果 RAM cache 不够，临时改为 `cache=disk`，但正式复现实验要记录变化。
 - 多卡 DDP 不支持自动 batch 时，手动指定能被 GPU 数量整除的 batch。
-- 权重文件不要提交到 git；远程仓库只保留代码、配置和 md 记录。
+- 普通训练输出权重不要提交；`weights/pretrained/` 中服务器复现必需的预训练和混合初始化权重允许随 Git 同步。

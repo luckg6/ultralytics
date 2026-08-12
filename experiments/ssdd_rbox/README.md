@@ -1,5 +1,7 @@
 # Official RBox-SSDD 消融实验
 
+> 状态：已完成并冻结的第二数据集与 seed 筛选记录。排序未形成论文所需的稳定 A/B/AB 互补关系，因此不再按下文旧“下一步”补训；当前第二主数据集为 HRSID-derived OBB。
+
 ## 数据协议
 
 - 原始数据：`C:/E/datasets/Official-SSDD-OPEN/RBox_SSDD/voc_style/`。

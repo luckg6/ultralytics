@@ -47,5 +47,5 @@
 ## 目录说明
 
 - 本目录保留训练 YAML 和评估说明。
-- `/home/ws` 未来新增训练默认可用 `device=1`、`batch=-1`、`cache=ram`，但复现论文表格时必须按上面的固定 batch 与三 seed 协议。
+- 第四章 `/home/ws` 新增筛选实验统一使用 `device=1`、`batch=16`、`cache=ram`；复现本章第三章论文表格时仍必须按上面的固定 batch 与三 seed 协议。
 - 旧 `experiments/dior/` 的 8:1:1 结果只可作为 alternate split robustness，不可直接横向比较。

@@ -8,7 +8,7 @@
 
 ## 本项目采用的部分
 
-本项目只采用论文的 HBS（Hierarchical Background Smoothing）思路，不声称复现完整 SET。论文消融中，HBS 单独将 FCOS 的 AI-TOD AP 从 12.0 提升到 13.9；完整 SET 为 14.2。HBS 是贡献最大的单个组件，并且比需要额外梯度计算的 API 更适合当前 YOLO11n-OBB 主线。
+本项目曾在第三章 C-SET-HBS 探索中只迁移 HBS（Hierarchical Background Smoothing）思路，不声称复现完整 SET。该探索未进入 FSPC-OBB 定稿方法，也不是第四章当前候选。论文原始消融中，HBS 单独将 FCOS 的 AI-TOD AP 从 12.0 提升到 13.9，完整 SET 为 14.2。
 
 项目实现为 `C-SET-HBS`：
 

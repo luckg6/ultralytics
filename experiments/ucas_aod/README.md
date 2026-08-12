@@ -1,6 +1,8 @@
 # UCAS-AOD 消融实验
 
-UCAS-AOD 是 EI 会议论文的第二个遥感 OBB 数据集。本阶段只训练四组模型：baseline、A-P2、B-PKI-Lite 和 A+B-PKI-Lite。所有模型均直接从 `weights/pretrained/yolo11n-obb.pt` 起训，不使用 DIOR-R 训练权重做初始化。
+> 状态：已完成的第二数据集筛选记录，不再是论文第二主数据集，也没有待执行训练。当前第二主数据集为 HRSID-derived OBB；下文“当前”“建议”“按约定”等均指 UCAS-AOD 筛选阶段当时状态。
+
+UCAS-AOD 曾作为 EI 会议论文的第二个遥感 OBB 候选数据集。本阶段只训练四组模型：baseline、A-P2、B-PKI-Lite 和 A+B-PKI-Lite。所有模型均直接从 `weights/pretrained/yolo11n-obb.pt` 起训，不使用 DIOR-R 训练权重做初始化。
 
 ## 数据集
 

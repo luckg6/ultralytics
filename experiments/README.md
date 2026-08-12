@@ -1,6 +1,6 @@
 # 实验目录总览
 
-本目录保留训练配置、数据集实验记录和阶段性评估。当前小论文/硕士第三章主线使用 DIOR-R official 与 HRSID-derived OBB；第四章已另设 `experiments/chapter4/`，作为 LSKNet-T backbone baseline 及后续 C/D 消融入口。
+本目录保留训练配置、数据集实验记录和阶段性评估。当前小论文/硕士第三章主线使用 DIOR-R official 与 HRSID-derived OBB；第四章已另设 `experiments/chapter4/`，作为 LSKNet-T baseline、候选模块筛选和后续正式 C/D 消融入口。
 
 ## 第三章主实验
 
@@ -54,7 +54,7 @@ LSKNet-T Backbone
 + original YOLO11 OBB Head
 ```
 
-该 baseline 不继承第三章 FSPB/LPCF。LSKNet-T 只是基础架构选择，不作为创新；后续 C、D 才是第四章创新点。
+该 baseline 不继承第三章 FSPB/LPCF。LSKNet-T 只是基础架构选择，不作为创新。OAC/FDF 第一轮组合和 Blend 稳健版均已完成筛选，但没有满足“组合稳定优于 baseline 与任一单模块”的最终要求；当前验证的新路线是 `FDConv-Lite + FDF`，结果尚未产生。
 
 当前 DIOR-R official 单种子结果：
 
@@ -63,7 +63,7 @@ LSKNet-T Backbone
 | Chapter 3 A+B | 2.740 | 10.7 | 72.25 | 54.55 | 29.20 | 20.42 |
 | LSKNet-T baseline | 5.728 | 18.7 | 73.72 | 56.88 | 27.69 | 18.15 |
 
-该结果只能说明 LSKNet-T 混合结构接入成功、可稳定训练，并具有较强全尺度检测潜力。由于模型容量和计算量明显不同，不能据此声称 LSKNet-T baseline 公平优于第三章 A+B 或 YOLO11 原生 backbone。第四章后续必须首先证明 C、D 相对于 LSKNet-T baseline 有效。
+该结果只能说明 LSKNet-T 混合结构接入成功、可稳定训练，并具有较强全尺度检测潜力。由于模型容量和计算量明显不同，不能据此声称 LSKNet-T baseline 公平优于第三章 A+B 或 YOLO11 原生 backbone。第四章最终仍须用 baseline、C、D、C+D 的受控消融证明两个模块及组合有效。
 
 ## DIOR-R 同协议模型对比
 

@@ -19,30 +19,25 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 
-RUNS_OAC_FDF = [
-    ("3407", "Baseline", "runs/obb/dior_official_lsknet_t_baseline_s3407/weights/best.pt"),
-    ("3407", "FDF", "runs/obb/dior_official_lsknet_t_fdf_s3407/weights/best.pt"),
-    ("3407", "OAC", "runs/obb/dior_official_lsknet_t_oac_s3407/weights/best.pt"),
-    ("3407", "OAC+FDF", "runs/obb/dior_official_lsknet_t_oac_fdf_s3407/weights/best.pt"),
-    ("2026", "Baseline", "runs/obb/dior_official_lsknet_t_baseline_s2026/weights/best.pt"),
-    ("2026", "FDF", "runs/obb/dior_official_lsknet_t_fdf_s2026/weights/best.pt"),
-    ("2026", "OAC", "runs/obb/dior_official_lsknet_t_oac_s2026/weights/best.pt"),
-    ("2026", "OAC+FDF", "runs/obb/dior_official_lsknet_t_oac_fdf_s2026/weights/best.pt"),
-]
-
-RUNS_BLEND = [
-    ("42", "Baseline", "runs/obb/dior_official_lsknet_t_baseline/weights/best.pt"),
-    ("42", "FDF", "runs/obb/dior_official_lsknet_t_fdf/weights/best.pt"),
-    ("42", "OAC", "runs/obb/dior_official_lsknet_t_oac/weights/best.pt"),
-    ("42", "OAC+FDF-Blend", "runs/obb/dior_official_lsknet_t_oac_fdf_blend_s42/weights/best.pt"),
-    ("3407", "Baseline", "runs/obb/dior_official_lsknet_t_baseline_s3407/weights/best.pt"),
-    ("3407", "FDF", "runs/obb/dior_official_lsknet_t_fdf_s3407/weights/best.pt"),
-    ("3407", "OAC", "runs/obb/dior_official_lsknet_t_oac_s3407/weights/best.pt"),
-    ("3407", "OAC+FDF-Blend", "runs/obb/dior_official_lsknet_t_oac_fdf_blend_s3407/weights/best.pt"),
-    ("2026", "Baseline", "runs/obb/dior_official_lsknet_t_baseline_s2026/weights/best.pt"),
-    ("2026", "FDF", "runs/obb/dior_official_lsknet_t_fdf_s2026/weights/best.pt"),
-    ("2026", "OAC", "runs/obb/dior_official_lsknet_t_oac_s2026/weights/best.pt"),
-    ("2026", "OAC+FDF-Blend", "runs/obb/dior_official_lsknet_t_oac_fdf_blend_s2026/weights/best.pt"),
+RUNS_FDCONV_FDF = [
+    (
+        "42",
+        "Baseline",
+        (
+            "weights/checkpoints/chapter4/dior_official/seed42/baseline/best.pt",
+            "runs/obb/dior_official_lsknet_t_baseline/weights/best.pt",
+        ),
+    ),
+    (
+        "42",
+        "FDF",
+        (
+            "weights/checkpoints/chapter4/dior_official/seed42/fdf/best.pt",
+            "runs/obb/dior_official_lsknet_t_fdf/weights/best.pt",
+        ),
+    ),
+    ("42", "FDConv-Lite", ("runs/obb/dior_official_lsknet_t_fdconv/weights/best.pt",)),
+    ("42", "FDConv-Lite+FDF", ("runs/obb/dior_official_lsknet_t_fdconv_fdf/weights/best.pt",)),
 ]
 
 
@@ -55,7 +50,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--workers", type=int, default=8)
     parser.add_argument("--project", default="runs/obb/chapter4_multiseed_eval")
     parser.add_argument("--out", default=None)
-    parser.add_argument("--combo", choices=("oac_fdf", "blend"), default="blend")
+    parser.add_argument("--combo", choices=("fdconv_fdf",), default="fdconv_fdf")
     parser.add_argument("--small-batch", type=int, default=None, help="Optional batch size for small-object eval.")
     return parser.parse_args()
 
@@ -63,6 +58,16 @@ def parse_args() -> argparse.Namespace:
 def resolve(path: str | Path) -> Path:
     path = Path(path)
     return path if path.is_absolute() else ROOT / path
+
+
+def resolve_checkpoint(candidates: tuple[str, ...]) -> Path:
+    """Use the local checkpoint archive first, then the original server run path."""
+    paths = [resolve(candidate) for candidate in candidates]
+    for path in paths:
+        if path.exists():
+            return path
+    formatted = "\n".join(f"  - {path}" for path in paths)
+    raise FileNotFoundError(f"Missing checkpoint; checked:\n{formatted}")
 
 
 def val(model, args: argparse.Namespace, seed: str, variant: str, small_only: bool):
@@ -121,21 +126,18 @@ def write_md(path: Path, rows: list[dict[str, object]], args: argparse.Namespace
 def main() -> None:
     args = parse_args()
     if args.out is None:
-        suffix = "blend" if args.combo == "blend" else "oac_fdf"
-        args.out = f"experiments/chapter4/dior_official_multiseed_{suffix}_eval_2026-08-07"
+        args.out = f"experiments/chapter4/dior_official_multiseed_fdconv_fdf_eval_{datetime.now():%Y-%m-%d}"
     out_stem = resolve(args.out)
-    runs = RUNS_BLEND if args.combo == "blend" else RUNS_OAC_FDF
+    runs = RUNS_FDCONV_FDF
 
     from ultralytics import YOLO
 
     rows = []
-    for seed, variant, weight in runs:
-        weight_path = resolve(weight)
-        if not weight_path.exists():
-            raise FileNotFoundError(f"Missing checkpoint: {weight_path}")
+    for seed, variant, candidates in runs:
+        weight_path = resolve_checkpoint(candidates)
 
         print("\n" + "=" * 80)
-        print(f"Evaluating seed={seed}, variant={variant}, weight={weight}")
+        print(f"Evaluating seed={seed}, variant={variant}, weight={weight_path}")
         print("=" * 80)
         model = YOLO(str(weight_path))
         metrics_all = val(model, args, seed, variant, small_only=False)
@@ -147,7 +149,7 @@ def main() -> None:
             "all_map50_95": pct(metrics_all.box.map),
             "small_map50": pct(metrics_small.box.map50),
             "small_map50_95": pct(metrics_small.box.map),
-            "weight": weight,
+            "weight": str(weight_path),
         }
         rows.append(row)
         write_csv(out_stem.with_suffix(".csv"), rows)

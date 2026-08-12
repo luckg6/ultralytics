@@ -14,18 +14,16 @@ FDConv 从频域构造动态卷积权重，目标是用较少参数获得更丰�
 
 ## 可迁移方案
 
-优先级从高到低：
-
-1. 不替换全网卷积，只做一个 `FDConvLite`，替换 neck/head 中 1-2 个 3x3 depthwise 卷积。
-2. 第一版不做完整 Fourier weight bank，可先做频带门控：低频全局池化 + 高频残差门控。
-3. 如果 B-PKI 或 B-FreqFuse 不理想，再考虑 FDConvLite。
+当前已经实现 `FDConvLiteAdapter`：不替换全网卷积，而是在第四章 LSKNet-T 的 P3/P4/P5 通道适配后做频域统计路由和多尺度 depthwise 动态校准。它是 FDConv 启发的轻量迁移，不声称复现官方完整 Fourier weight bank。
 
 ## 适合作为哪个实验
 
-- 新 B/C 备选：`B-FDConvLite` 或 `C-FDConvLite`。
+- 第四章当前 C-v2 候选：`FDConv-Lite`；组合候选为 `FDConv-Lite + FDF`。
 
 ## 风险
 
 - 官方 FDConv 目标不是遥感 OBB，迁移动机要写清楚。
 - 频域实现容易引入额外计算和数值不稳定，第一版必须轻量。
-- 不建议作为下一步首选，优先级低于 PKINet 和 FreqFusion。
+- seed 42 和后续多 seed 结果尚未产生，因此目前只能称候选，不能写成定稿创新。
+
+实现与命令见 `experiments/chapter4/README.md`。

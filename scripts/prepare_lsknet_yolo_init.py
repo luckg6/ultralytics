@@ -60,11 +60,35 @@ YOLO_TO_LSK_OAC_LAYERS = {
     23: 24,  # OBB head
 }
 
+YOLO_TO_LSK_FDCONV_LAYERS = {
+    9: 9,  # SPPF
+    10: 10,  # C2PSA
+    13: 14,  # top-down P5->P4 C3k2 after FDConv-Lite
+    16: 17,  # top-down P4->P3 C3k2 after FDConv-Lite
+    17: 18,  # PAN P3->P4 downsample
+    19: 20,  # PAN P4 C3k2
+    20: 21,  # PAN P4->P5 downsample
+    22: 23,  # PAN P5 C3k2
+    23: 24,  # OBB head
+}
+
 YOLO_TO_LSK_OAC_FDF_LAYERS = {
     9: 9,  # SPPF
     10: 10,  # C2PSA
     13: 13,  # top-down P5->P4 C3k2 after OAC + FDF
     16: 15,  # top-down P4->P3 C3k2 after OAC + FDF
+    17: 16,  # PAN P3->P4 downsample
+    19: 18,  # PAN P4 C3k2
+    20: 19,  # PAN P4->P5 downsample
+    22: 21,  # PAN P5 C3k2
+    23: 22,  # OBB head
+}
+
+YOLO_TO_LSK_FDCONV_FDF_LAYERS = {
+    9: 9,  # SPPF
+    10: 10,  # C2PSA
+    13: 13,  # top-down P5->P4 C3k2 after FDConv-Lite + FDF
+    16: 15,  # top-down P4->P3 C3k2 after FDConv-Lite + FDF
     17: 16,  # PAN P3->P4 downsample
     19: 18,  # PAN P4 C3k2
     20: 19,  # PAN P4->P5 downsample
@@ -135,8 +159,12 @@ def choose_yolo_mapping(model_path: Path) -> dict[int, int]:
     """Choose the compatible YOLO11 layer-index mapping for a Chapter 4 model."""
     if "oac-fdf-blend" in model_path.stem or "oac_fdf_blend" in model_path.stem:
         return YOLO_TO_LSK_OAC_FDF_BLEND_LAYERS
+    if "fdconv-fdf" in model_path.stem or "fdconv_fdf" in model_path.stem:
+        return YOLO_TO_LSK_FDCONV_FDF_LAYERS
     if "oac-fdf" in model_path.stem or "oac_fdf" in model_path.stem:
         return YOLO_TO_LSK_OAC_FDF_LAYERS
+    if "fdconv" in model_path.stem:
+        return YOLO_TO_LSK_FDCONV_LAYERS
     if "fdf" in model_path.stem:
         return YOLO_TO_LSK_FDF_LAYERS
     if "oac" in model_path.stem:
@@ -149,8 +177,12 @@ def default_variant_paths(model_path: Path) -> tuple[str, str]:
     stem = model_path.stem
     if "oac-fdf-blend" in stem or "oac_fdf_blend" in stem:
         variant = "oac_fdf_blend"
+    elif "fdconv-fdf" in stem or "fdconv_fdf" in stem:
+        variant = "fdconv_fdf"
     elif "oac-fdf" in stem or "oac_fdf" in stem:
         variant = "oac_fdf"
+    elif "fdconv" in stem:
+        variant = "fdconv"
     elif "fdf" in stem:
         variant = "fdf"
     elif "oac" in stem:

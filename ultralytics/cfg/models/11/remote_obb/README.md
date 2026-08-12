@@ -1,27 +1,50 @@
-# remote_obb 模型结构配置
+# 遥感 OBB 模型 YAML 索引
 
-这个目录用于管理遥感影像小目标 OBB 旋转框检测的 YOLO11n 结构变体。
+本目录同时保留第三章定稿结构、历史筛选结构和第四章候选结构。文件存在不代表仍需训练；执行状态以 `experiments/chapter4/README.md` 和各数据集 README 为准。
 
-## 当前文件
+## 第三章定稿结构
 
-- `yolo11n-obb-baseline.yaml`：YOLO11n-OBB baseline 结构，复制自官方 `yolo11-obb.yaml`，显式作为本课题 baseline 配置使用。
-- `yolo11n-obb-a-p2.yaml`：实验 A，在 P3/P4/P5 的 OBB head 基础上新增 P2/4 小目标检测分支。
-- `yolo11n-obb-b-lsk.yaml`：实验 B，在原 SPPF 位置使用轻量 `SPPFLSK` 上下文注意力模块，保持 OBB(P3/P4/P5) head 不变，用于单独消融遥感上下文建模。
-- `yolo11n-obb-b-pki-lite.yaml`：实验 B 第二版，在 top-down neck 的 P5->P4、P4->P3 融合块使用轻量 `C3k2PKI`，用于替代效果不佳的 B-LSK。
-- `yolo11n-obb-c-dynamic.yaml`：实验 C，在 OBB head 的 P3/P4/P5 输出融合层使用轻量 `C3k2Geo` 方向几何感知模块，用于单独消融旋转目标几何适应。
-- `yolo11n-obb-c-dynamic-plus.yaml`：实验 C 加强版，在相同 OBB head 位置使用更强的 `C3k2GeoPlus`，不覆盖原 C-Dynamic，用于复验更强几何适应模块。
-- `yolo11n-obb-c-gra-lite.yaml`：实验 C 新候选，参考 ECCV 2024 GRA，在 OBB head 的 P3/P4/P5 输出融合层使用轻量 `C3k2GRA` 方向路由模块。
-- `yolo11n-obb-c-chol-lite.yaml`：实验 C 新方向，在标准 OBB head 上增加训练时 Cholesky/SPD 协方差辅助分支；YOLO11 已有 ProbIoU 和周期角度 loss，因此该方向不重复普通 Gaussian/ProbIoU，而是额外预测正定几何表征，推理 decode/NMS 不变。
-- `yolo11n-obb-ab-p2-pki-lite.yaml`：A + 新版 B-PKI-Lite，保留 P2 检测分支，同时在原 top-down neck 的 P5->P4、P4->P3 融合块使用 `C3k2PKI`。
-- `yolo11n-obb-abc-p2-pki-geo-plus.yaml`：A + B-PKI-Lite + C-Dynamic-Plus，已完成训练和评估，强于 baseline 但低于 A+B-PKI-Lite。
-- `yolo11n-obb-abc-p2-pki-gra-lite.yaml`：A + B-PKI-Lite + C-GRA-Lite，配置可用；由于 C-GRA-Lite 单点弱于 C-Plus，当前暂不优先训练。
-- `yolo11n-obb-abc-p2-pki-chol-lite.yaml`：A + B-PKI-Lite + C-Chol-Lite，作为 C-Chol-Lite 单点有效后的组合候选。
+| YAML | 定位 |
+|---|---|
+| `yolo11n-obb-baseline.yaml` | YOLO11n-OBB 受控 baseline |
+| `yolo11n-obb-a-p2.yaml` | A：FSPB，新增 P2/stride-4 预测与 PAN 回流 |
+| `yolo11n-obb-b-pki-lite.yaml` | B：LPCF，替换两处 top-down 融合块 |
+| `yolo11n-obb-ab-p2-pki-lite.yaml` | A+B：FSPC-OBB，第三章最终方法 |
 
-## 后续计划
+论文写作使用 FSPB/LPCF 正式名称；A-P2、B-PKI-Lite 只作为内部历史名。
 
-旧计划中尚未优先训练的 YAML：
+## 第三章历史探索
 
-- `yolo11n-obb-ab-p2-lsk.yaml`：A + 旧版 B-LSK，当前不建议优先训练。
-- `yolo11n-obb-abc-p2-lsk-dynamic.yaml`：A + B + C。
+- `yolo11n-obb-b-lsk.yaml`：无效的早期 B，已由 LPCF 替代。
+- `yolo11n-obb-c-dynamic*.yaml`、`yolo11n-obb-c-gra-lite.yaml`、`yolo11n-obb-c-chol-lite.yaml`：C 系列单模块探索。
+- `yolo11n-obb-abc-*.yaml`、`yolo11n-obb-ab-p2-lsk.yaml`：组合探索。
 
-不要创建和 baseline 完全相同但命名为 A/B/C 的 YAML，避免后续误跑假改进实验。
+这些 YAML 为可追溯性保留，不进入第三章主方法，也不是第四章候选。
+
+## 第四章基础结构
+
+- `yolo11n-obb-lsknet-t-baseline.yaml`：LSKNet-T backbone、必要通道适配、原 YOLO11 Neck 和 OBB Head。
+
+LSKNet-T 与适配层属于 baseline 架构选择，不算创新。
+
+## 第四章已完成筛选
+
+- `yolo11n-obb-lsknet-t-oac.yaml`
+- `yolo11n-obb-lsknet-t-fdf.yaml`
+- `yolo11n-obb-lsknet-t-oac-fdf.yaml`
+- `yolo11n-obb-lsknet-t-oac-fdf-blend.yaml`
+
+OAC/FDF 及 Blend 的结果均保留，但组合没有稳定优于两个单模块，不作为当前定稿 C/D。
+
+## 第四章当前候选
+
+- `yolo11n-obb-lsknet-t-fdconv.yaml`：C-v2，FDConv-Lite adapter。
+- `yolo11n-obb-lsknet-t-fdconv-fdf.yaml`：C+D，FDConv-Lite + FDF。
+
+两者目前只完成代码、初始化和 seed 42 配置，尚无训练结论。结果成立后再生成三 seed 与第二数据集正式配置。
+
+## 维护规则
+
+- 不创建与 baseline 结构完全相同、仅改文件名的 A/B/C YAML。
+- 新 YAML 必须在对应实验 README 中登记改动位置、初始化权重、训练协议和状态。
+- 历史 YAML 不删除，但必须避免使用“当前候选”一类无时间边界的描述。
