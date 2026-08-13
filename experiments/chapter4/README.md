@@ -94,8 +94,10 @@ python scripts/train_obb.py --config experiments/chapter4/lsknet_t_fdconv_fdf_di
 训练后持久化评估：
 
 ```bash
-python scripts/evaluate_chapter4_multiseed.py --combo fdconv_fdf --data ultralytics/cfg/datasets/DIOR-official-homews.yaml --split test --imgsz 640 --device 1 --workers 8
+python scripts/evaluate_experiment_suite.py --suite experiments/chapter4/eval_fdconv_screen_homews.yaml
 ```
+
+评估清单会同时记录 Baseline、FDF、FDConv-Lite 和 FDConv-Lite+FDF。以后新增 C/D 候选时，优先复制并修改 `eval_fdconv_screen_homews.yaml`，不要再新增写死组合名称的专用评估脚本。
 
 只有 seed 42 同时支持单 C 和 C+D，且组合达到预期趋势后，才补齐三个 seed、第二数据集及正式四组消融配置。
 

@@ -16,17 +16,17 @@ python scripts/train_obb.py --config experiments/chapter4/lsknet_t_fdconv_fdf_di
 
 ```bash
 cd /home/ws/ultralytics && source .venv/bin/activate && \
-python scripts/evaluate_chapter4_multiseed.py --combo fdconv_fdf \
-  --data ultralytics/cfg/datasets/DIOR-official-homews.yaml \
-  --split test --imgsz 640 --device 1 --workers 8
+python scripts/evaluate_experiment_suite.py --suite experiments/chapter4/eval_fdconv_screen_homews.yaml
 ```
 
 输出：
 
-- `experiments/chapter4/dior_official_multiseed_fdconv_fdf_eval_<date>.csv`
-- `experiments/chapter4/dior_official_multiseed_fdconv_fdf_eval_<date>.md`
+- `experiments/chapter4/dior_official_fdconv_screen_eval.csv`
+- `experiments/chapter4/dior_official_fdconv_screen_eval.md`
 
 若小目标评估显存不足，追加 `--small-batch 1`。
+
+后续新增网络时，复制并修改 `eval_fdconv_screen_homews.yaml` 中的 `experiments` 列表即可；通用脚本会从训练配置的 `name` 自动寻找 `runs/obb/<name>/weights/best.pt`，不需要再为每个组合新增 Python 脚本。
 
 ## 已完成，不再重复运行
 
