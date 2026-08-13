@@ -159,10 +159,14 @@ def choose_yolo_mapping(model_path: Path) -> dict[int, int]:
     """Choose the compatible YOLO11 layer-index mapping for a Chapter 4 model."""
     if "oac-fdf-blend" in model_path.stem or "oac_fdf_blend" in model_path.stem:
         return YOLO_TO_LSK_OAC_FDF_BLEND_LAYERS
+    if "sgc-fdf" in model_path.stem or "sgc_fdf" in model_path.stem:
+        return YOLO_TO_LSK_FDCONV_FDF_LAYERS
     if "fdconv-fdf" in model_path.stem or "fdconv_fdf" in model_path.stem:
         return YOLO_TO_LSK_FDCONV_FDF_LAYERS
     if "oac-fdf" in model_path.stem or "oac_fdf" in model_path.stem:
         return YOLO_TO_LSK_OAC_FDF_LAYERS
+    if "sgc" in model_path.stem:
+        return YOLO_TO_LSK_FDCONV_LAYERS
     if "fdconv" in model_path.stem:
         return YOLO_TO_LSK_FDCONV_LAYERS
     if "fdf" in model_path.stem:
@@ -177,10 +181,14 @@ def default_variant_paths(model_path: Path) -> tuple[str, str]:
     stem = model_path.stem
     if "oac-fdf-blend" in stem or "oac_fdf_blend" in stem:
         variant = "oac_fdf_blend"
+    elif "sgc-fdf" in stem or "sgc_fdf" in stem:
+        variant = "sgc_fdf"
     elif "fdconv-fdf" in stem or "fdconv_fdf" in stem:
         variant = "fdconv_fdf"
     elif "oac-fdf" in stem or "oac_fdf" in stem:
         variant = "oac_fdf"
+    elif "sgc" in stem:
+        variant = "sgc"
     elif "fdconv" in stem:
         variant = "fdconv"
     elif "fdf" in stem:

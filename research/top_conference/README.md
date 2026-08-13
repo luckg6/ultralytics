@@ -5,8 +5,8 @@
 ## 章节边界
 
 - 第三章已经定稿为 FSPC-OBB：FSPB(A) + LPCF(B)。C-GRA、C-Chol、C-SET-HBS 等均为历史探索，不进入第三章主方法。
-- 第四章以 LSKNet-T 混合结构为 baseline，LSKNet-T 本身不算创新。OAC/FDF 第一轮组合与 Blend 已完成但未达到最终组合目标。
-- 第四章当前只筛选 `FDConv-Lite + FDF`；在结果产生并通过多 seed、第二数据集验证前，不把它写成最终 C/D。
+- 第四章以 LSKNet-T 混合结构为 baseline，LSKNet-T 本身不算创新。OAC/FDF 第一轮组合、Blend 与 FDConv-Lite 均已完成筛选但未达到最终组合目标。
+- 第四章下一轮优先筛选 `SGC + FDF`：SGC 为 Strip R-CNN 启发的条带几何校准候选；在结果产生并通过多 seed、第二数据集验证前，不把它写成最终 C/D。
 
 ## 参考索引
 
@@ -16,7 +16,8 @@
 | `pkinet_2024/` | PKINet / Poly Kernel Inception | CVPR 2024 | 第三章 LPCF 研究参考 |
 | `gra_2024/` | Group-wise Rotating and Attention | ECCV 2024 | OAC 历史筛选依据 |
 | `freqfusion_2024/` | FreqFusion | 2024 / 后续期刊项目 | 第四章 FDF 候选依据 |
-| `fdconv_2025/` | Frequency Dynamic Convolution | CVPR 2025 | 当前 FDConv-Lite 候选依据 |
+| `fdconv_2025/` | Frequency Dynamic Convolution | CVPR 2025 | FDConv-Lite 历史筛选依据 |
+| `strip_rcnn_2025/` | Strip R-CNN / Large Strip Convolution | arXiv 2025 / AAAI 2026 | 下一轮 SGC 候选依据 |
 | `gaucho_2025/` | GauCho | CVPR 2025 | OBB 几何表示备选 |
 | `canconv_2024/` | CANConv | CVPR 2024 | 低优先级跨任务备选 |
 | `set_2025/` | SET / HBS | CVPR 2025 | 第三章 C 系列历史探索 |

@@ -113,6 +113,7 @@ from .remote_obb_blocks import (
     PKIContext,
     ResidualFeatureBlend,
     SPPFLSK,
+    StripGuidedCalibration,
 )
 from .transformer import (
     AIFI,
@@ -150,6 +151,7 @@ __all__ = (
     "SPPELAN",
     "SPPF",
     "SPPFLSK",
+    "StripGuidedCalibration",
     "A2C2f",
     "AConv",
     "ADown",

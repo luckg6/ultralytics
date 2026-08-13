@@ -14,11 +14,11 @@ FDConv 从频域构造动态卷积权重，目标是用较少参数获得更丰�
 
 ## 可迁移方案
 
-当前已经实现 `FDConvLiteAdapter`：不替换全网卷积，而是在第四章 LSKNet-T 的 P3/P4/P5 通道适配后做频域统计路由和多尺度 depthwise 动态校准。它是 FDConv 启发的轻量迁移，不声称复现官方完整 Fourier weight bank。
+已实现过 `FDConvLiteAdapter`：不替换全网卷积，而是在第四章 LSKNet-T 的 P3/P4/P5 通道适配后做频域统计路由和多尺度 depthwise 动态校准。它是 FDConv 启发的轻量迁移，不声称复现官方完整 Fourier weight bank。
 
 ## 适合作为哪个实验
 
-- 第四章当前 C-v2 候选：`FDConv-Lite`；组合候选为 `FDConv-Lite + FDF`。
+- 第四章历史 C-v2 候选：`FDConv-Lite`；组合候选为 `FDConv-Lite + FDF`。DIOR-R seed 42 筛选中，组合低于单 FDF 与单 FDConv-Lite，因此不继续扩展三 seed。
 
 ## 风险
 

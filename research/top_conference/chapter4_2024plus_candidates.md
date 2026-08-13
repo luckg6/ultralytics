@@ -34,7 +34,8 @@ DIOR-R official test：
 |---|---|---|---|---|
 | GRA-style directional calibration | GRA: Detecting Oriented Objects through Group-wise Rotating and Attention | ECCV 2024 | 本地已有 `research/external_repos/GRA` | 针对旋转目标方向变化，适合做 C：方向敏感特征校准 |
 | Frequency-aware detail fusion | FreqFusion: Frequency-Aware Feature Fusion for Dense Image Prediction | arXiv 2024 / TPAMI 项目代码 | 本地已有 `research/external_repos/FreqFusion` | 适合做 D：浅深层融合时补边界和高频细节 |
-| FDConv-style frequency dynamic convolution | Frequency Dynamic Convolution for Dense Image Prediction | CVPR 2025 | 本地已有 `research/external_repos/FDConv` | 当前 C-v2 候选：频域动态卷积增强 backbone/adapter 特征 |
+| FDConv-style frequency dynamic convolution | Frequency Dynamic Convolution for Dense Image Prediction | CVPR 2025 | 本地已有 `research/external_repos/FDConv` | 历史 C-v2 筛选：小目标略升但组合失败，不继续扩展 |
+| Strip-guided geometry calibration | Strip R-CNN: Large Strip Convolution for Remote Sensing Object Detection | arXiv 2025 / AAAI 2026 | GitHub 直连克隆超时；论文/README 已核验 | 下一轮 C 候选：横/竖条带几何响应，与 FDF 互补 |
 | Angle/boundary representation | Rethinking Boundary Discontinuity Problem for Oriented Object Detection | CVPR 2024 | 需进一步下载/核对代码 | 可作为 D 或 loss/head 备选，但要避免和现有 ProbIoU/OBB loss 重复 |
 | Point-axis geometry | Projecting Points to Axes: Oriented Object Detection via Point-Axis Representation | ECCV 2024 | 官网有 paper/code 链接，尚未本地化 | 几何辅助监督备选，工程量偏大 |
 | CANConv | Content-Adaptive Non-Local Convolution for Remote Sensing Pansharpening | CVPR 2024 | 源码未下载成功；原任务是 pansharpening | 低优先级。遥感属性强，但迁移到检测需要额外论证 |
@@ -162,6 +163,53 @@ LSKNet-T C3/C4/C5 output
 - 当前是 FDConv 启发的轻量 adapter，不是官方完整 FDConv；
 - 参数和 GFLOPs 可能进一步上升，需如实报告。
 
+筛选结果：
+
+- DIOR-R official seed 42 结果见 `experiments/chapter4/dior_official_fdconv_screen_eval.md`。
+- FDConv-Lite 相对 baseline 小目标指标提升，但 All mAP50 和 All mAP50:95 下降。
+- FDConv-Lite+FDF 在四项指标上均低于单 FDF，也低于单 FDConv-Lite。
+- 该方向保留为筛选记录，不继续扩展三 seed。
+
+## 下一轮候选 C-v3：SGC 条带几何校准
+
+暂名：`SGC` / `Strip-Guided Calibration`。
+
+Strip R-CNN 是 2025 arXiv、AAAI 2026 官方实现的遥感目标检测工作。其核心动机是：高长宽比和不同形状的遥感目标不适合只依赖方形大核或均匀全局上下文；顺序正交的大条带卷积可以沿横向和纵向聚合空间信息，并增强定位分支。
+
+第四章中不整体替换 LSKNet-T backbone，也不引入 Strip R-CNN 的两阶段检测框架，而是把该思想迁移成轻量校准模块：
+
+```text
+LSKNet-T C3/C4/C5 output
+-> 1x1 channel adapter
+-> SGC strip-guided calibration on P3/P4/P5
+-> original YOLO11 Neck or FDF-enhanced top-down neck
+-> original YOLO11 OBB Head
+```
+
+与已有模块的区别：
+
+- 与 LSKNet 不同：LSKNet 偏动态选择不同范围的大核上下文，SGC 偏显式横/竖条带几何响应；
+- 与 FDF 不同：FDF 侧重频率细节和融合一致性，SGC 侧重空间形状和长条目标定位；
+- 与第三章 A/B 不同：不新增 P2 检测分支，不做 poly-kernel neck context fusion；
+- 与 FDConv-Lite 不同：不再叠加频域动态卷积，避免与 FDF 机制重叠。
+
+建议实现：
+
+- 在 P3/P4/P5 adapter 后加入轻量残差 `StripGuidedCalibration`；
+- 每个尺度使用 `1xk` 和 `kx1` depthwise strip branches，并用轻量 gate 融合；
+- 使用零初始化或小幅残差缩放，避免破坏 LSKNet-T 的 DOTA 预训练特征；
+- 第一轮只配置 `SGC` 和 `SGC+FDF` 的 DIOR-R official seed 42；若组合不能优于 baseline、FDF 和 SGC 单模块，就停止扩展。
+
+当前实现：
+
+- 模块：`ultralytics/nn/modules/remote_obb_blocks.py` 中的 `StripGuidedCalibration`。
+- 单 C 模型：`ultralytics/cfg/models/11/remote_obb/yolo11n-obb-lsknet-t-sgc.yaml`。
+- C+D 模型：`ultralytics/cfg/models/11/remote_obb/yolo11n-obb-lsknet-t-sgc-fdf.yaml`。
+- 本地配置：`experiments/chapter4/lsknet_t_sgc_dior_official.yaml`、`experiments/chapter4/lsknet_t_sgc_fdf_dior_official.yaml`。
+- `/home/ws` 配置：`experiments/chapter4/lsknet_t_sgc_dior_official_homews.yaml`、`experiments/chapter4/lsknet_t_sgc_fdf_dior_official_homews.yaml`，固定 `batch=16`、`device=1`、`cache=ram`。
+- 初始化报告：`experiments/chapter4/lsknet_t_sgc_init_report.md`、`experiments/chapter4/lsknet_t_sgc_fdf_init_report.md`。
+- 批量评估清单：`experiments/chapter4/eval_sgc_screen_homews.yaml`。
+
 ## 低优先级：CANConv
 
 CANConv 是 CVPR 2024 遥感 pansharpening 工作，提出 content-adaptive non-local convolution，利用 spatial adaptability 和 non-local self-similarity。
@@ -193,8 +241,9 @@ https://github.com/duanyll/CANConv
   已完成 C+D = OAC+FDF 三 seed DIOR-R official 评估；组合模型在平均 Small mAP50、Small mAP50:95 和 All mAP50:95 上最好，但 All mAP50 平均值由 OAC 单模块最高，且 seed 3407 的组合全尺度指标存在回落
 
 第二优先级：
-  OAC+FDF-Blend 已验证未达到严格目标，当前改为 C-v2 = FDConv-Lite
-  先跑 seed42 的 FDConv-Lite 与 FDConv-Lite+FDF；若组合不能优于 baseline、FDF 和 FDConv-Lite 单模块，则继续换 C/D 方向
+  OAC+FDF-Blend 和 FDConv-Lite+FDF 均已验证未达到严格目标
+  当前改为 C-v3 = SGC / Strip-Guided Calibration
+  先跑 seed42 的 SGC 与 SGC+FDF；若组合不能优于 baseline、FDF 和 SGC 单模块，则继续换 C/D 方向
 
 第三优先级：
   角度连续表示 / Point-Axis / CANConv 作为论文讨论或后续备选，不先实现
@@ -206,5 +255,7 @@ https://github.com/duanyll/CANConv
 - GRA arXiv: https://arxiv.org/abs/2403.11127
 - FreqFusion official repo: https://github.com/Linwei-Chen/FreqFusion
 - FDConv official repo: https://github.com/Linwei-Chen/FDConv
+- Strip R-CNN official repo: https://github.com/HVision-NKU/Strip-R-CNN
+- Strip R-CNN arXiv: https://arxiv.org/abs/2501.03775
 - Point-Axis project: https://pointaxis.github.io/
 - CANConv official repo: https://github.com/duanyll/CANConv

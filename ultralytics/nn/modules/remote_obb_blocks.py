@@ -26,6 +26,7 @@ __all__ = (
     "P2SemanticGuard",
     "ResidualFeatureBlend",
     "SPPFLSK",
+    "StripGuidedCalibration",
 )
 
 
@@ -576,6 +577,68 @@ class FDConvLiteAdapter(nn.Module):
         pooled = torch.cat((dynamic.mean(1, keepdim=True), dynamic.amax(1, keepdim=True)), dim=1)
         dynamic = dynamic * self.freq_channel(freq) * self.spatial_gate(pooled)
         return x + torch.tanh(self.gamma) * self.restore(dynamic)
+
+
+class StripGuidedCalibration(nn.Module):
+    """Strip R-CNN-inspired lightweight geometry calibration for Chapter 4.
+
+    The official StripBlock uses a 5x5 depthwise convolution followed by
+    orthogonal 1x19 and 19x1 strip convolutions. This adapter keeps that
+    direction-sensitive shape prior, adds a small route between local and two
+    orthogonal strip orders, and starts from an identity-preserving residual.
+    """
+
+    def __init__(self, c1: int, expansion: float = 0.25, k: int = 19, max_mid: int = 128):
+        """Initialize local and orthogonal strip branches for one feature scale."""
+        super().__init__()
+        c_mid = max(min(int(c1 * expansion), max_mid), 32)
+        c_gate = max(c_mid // 4, 16)
+        pad = k // 2
+        self.reduce = ConvBNAct(c1, c_mid, 1, p=0)
+        self.local = nn.Sequential(
+            nn.Conv2d(c_mid, c_mid, 5, padding=2, groups=c_mid, bias=False),
+            nn.BatchNorm2d(c_mid),
+            nn.SiLU(inplace=True),
+        )
+        self.strip_hv = nn.Sequential(
+            nn.Conv2d(c_mid, c_mid, (1, k), padding=(0, pad), groups=c_mid, bias=False),
+            nn.Conv2d(c_mid, c_mid, (k, 1), padding=(pad, 0), groups=c_mid, bias=False),
+        )
+        self.strip_vh = nn.Sequential(
+            nn.Conv2d(c_mid, c_mid, (k, 1), padding=(pad, 0), groups=c_mid, bias=False),
+            nn.Conv2d(c_mid, c_mid, (1, k), padding=(0, pad), groups=c_mid, bias=False),
+        )
+        self.branch_norm = nn.BatchNorm2d(c_mid)
+        self.branch_act = nn.SiLU(inplace=True)
+        self.router = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(c_mid, c_gate, 1, bias=True),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(c_gate, 3, 1, bias=True),
+        )
+        self.channel_gate = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(c_mid, c_gate, 1, bias=True),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(c_gate, c_mid, 1, bias=True),
+            nn.Sigmoid(),
+        )
+        self.spatial_gate = nn.Sequential(nn.Conv2d(2, 1, 7, padding=3, bias=True), nn.Sigmoid())
+        self.restore = ConvBNAct(c_mid, c1, 1, p=0)
+        self.softmax = nn.Softmax(dim=1)
+        self.gamma = nn.Parameter(torch.zeros(1))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Calibrate adapter features with local and strip-shaped geometry cues."""
+        y = self.reduce(x)
+        local = self.local(y)
+        branches = torch.stack((local, self.strip_hv(local), self.strip_vh(local)), dim=1)
+        weights = self.softmax(self.router(y)).unsqueeze(2)
+        strip = (branches * weights).sum(dim=1)
+        strip = self.branch_act(self.branch_norm(strip))
+        pooled = torch.cat((strip.mean(1, keepdim=True), strip.amax(1, keepdim=True)), dim=1)
+        strip = strip * self.channel_gate(strip) * self.spatial_gate(pooled)
+        return x + torch.tanh(self.gamma) * self.restore(strip)
 
 
 class DirectionalGeoAttention(nn.Module):

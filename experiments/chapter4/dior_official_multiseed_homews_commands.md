@@ -2,9 +2,31 @@
 
 更新日期：2026-08-12
 
-固定环境：`device=1`、`batch=16`、`cache=ram`、`epochs=100`。当前先做 FDConv-Lite 路线的 seed 42 筛选；三 seed 命令要等该组合成立后再生成，避免继续运行已经淘汰的组合。
+固定环境：`device=1`、`batch=16`、`cache=ram`、`epochs=100`。当前待运行的是 SGC 路线的 DIOR-R official seed 42 筛选。
 
 ## 当前应运行
+
+```bash
+cd /home/ws/ultralytics && source .venv/bin/activate && \
+python scripts/train_obb.py --config experiments/chapter4/lsknet_t_sgc_dior_official_homews.yaml && \
+python scripts/train_obb.py --config experiments/chapter4/lsknet_t_sgc_fdf_dior_official_homews.yaml
+```
+
+训练后执行持久化评估：
+
+```bash
+cd /home/ws/ultralytics && source .venv/bin/activate && \
+python scripts/evaluate_experiment_suite.py --suite experiments/chapter4/eval_sgc_screen_homews.yaml
+```
+
+输出：
+
+- `experiments/chapter4/dior_official_sgc_screen_eval.csv`
+- `experiments/chapter4/dior_official_sgc_screen_eval.md`
+
+若小目标评估显存不足，追加 `--small-batch 1`。
+
+## FDConv-Lite 筛选记录
 
 ```bash
 cd /home/ws/ultralytics && source .venv/bin/activate && \
@@ -28,12 +50,15 @@ python scripts/evaluate_experiment_suite.py --suite experiments/chapter4/eval_fd
 
 后续新增网络时，复制并修改 `eval_fdconv_screen_homews.yaml` 中的 `experiments` 列表即可；通用脚本会从训练配置的 `name` 自动寻找 `runs/obb/<name>/weights/best.pt`，不需要再为每个组合新增 Python 脚本。
 
+FDConv-Lite seed 42 结果：组合模型在四项指标上均低于单 FDF，也低于单 FDConv-Lite，因此不继续运行三 seed。
+
 ## 已完成，不再重复运行
 
 以下三 seed 组已经完成：
 
 - Baseline、FDF、OAC、OAC+FDF；
 - OAC+FDF-Blend 稳健组合。
+- FDConv-Lite、FDConv-Lite+FDF seed 42 筛选。
 
 它们的配置继续保留用于追溯，但不是当前待运行任务。结果入口：
 

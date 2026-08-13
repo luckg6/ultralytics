@@ -80,6 +80,7 @@ from ultralytics.nn.modules import (
     Segment,
     Segment26,
     SPPFLSK,
+    StripGuidedCalibration,
     TorchVision,
     WorldDetect,
     YOLOEDetect,
@@ -1694,7 +1695,7 @@ def parse_model(d, ch, verbose=True):
         elif m is LSKBlock:
             c2 = ch[f]
             args = [c2, *args]
-        elif m in frozenset({OrientationAwareCalibration, FDConvLiteAdapter}):
+        elif m in frozenset({OrientationAwareCalibration, FDConvLiteAdapter, StripGuidedCalibration}):
             c2 = ch[f]
             args = [c2, *args]
         elif m is LSKNetT:

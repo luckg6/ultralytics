@@ -73,17 +73,22 @@ OAC+FDF 的小目标和 All mAP50:95 均值有提升，但 All mAP50 仅比 base
 
 Blend 版保留原 top-down 主路径并以零初始化残差混合 FDF，目的是降低组合的 seed 波动。三 seed 结果仍未满足“组合优于 baseline 与任一单模块”的要求，因此停止扩展。数据保留在 `dior_official_multiseed_blend_eval_2026-08-07.md` 和同名 CSV 中。
 
-## 当前筛选路线
+### FDConv-Lite 与 FDConv-Lite+FDF
 
-当前仅把以下名称视为待验证候选，不能在论文中提前称为最终 C/D：
+FDConv-Lite 是第二轮 C 候选，FDF 继续作为 D 候选参与组合。seed 42 结果如下：
 
-- `C-v2 = FDConv-Lite`：在 LSKNet-T 的 P3/P4/P5 通道适配后加入频域动态 adapter。
-- `D = FDF`：保留第一轮中对小目标有效的 top-down 频率细节融合。
-- `C+D = FDConv-Lite + FDF`。
+| Variant | All mAP50 | All mAP50:95 | Small mAP50 | Small mAP50:95 |
+|---|---:|---:|---:|---:|
+| Baseline | 73.68 | 56.87 | 27.69 | 18.14 |
+| FDF | 73.60 | **56.92** | **29.31** | **19.47** |
+| FDConv-Lite | 73.41 | 56.80 | 28.94 | 19.05 |
+| FDConv-Lite+FDF | 73.28 | 56.53 | 28.77 | 18.92 |
 
 模型规模：FDConv-Lite 为 `5.832M / 19.2 GFLOPs`，FDConv-Lite+FDF 为 `5.862M / 19.2 GFLOPs`。初始化报告分别为 `lsknet_t_fdconv_init_report.md` 和 `lsknet_t_fdconv_fdf_init_report.md`。
 
-先运行 seed 42 筛选：
+结论：FDConv-Lite 单独能提升小目标指标，但全尺度指标略降；FDConv-Lite+FDF 在四项指标上均低于单 FDF，也低于单 FDConv-Lite。因此该方向保留为筛选记录，不继续扩展三 seed。
+
+复核训练命令：
 
 ```bash
 cd /home/ws/ultralytics && source .venv/bin/activate && \
@@ -99,7 +104,40 @@ python scripts/evaluate_experiment_suite.py --suite experiments/chapter4/eval_fd
 
 评估清单会同时记录 Baseline、FDF、FDConv-Lite 和 FDConv-Lite+FDF。以后新增 C/D 候选时，优先复制并修改 `eval_fdconv_screen_homews.yaml`，不要再新增写死组合名称的专用评估脚本。
 
-只有 seed 42 同时支持单 C 和 C+D，且组合达到预期趋势后，才补齐三个 seed、第二数据集及正式四组消融配置。
+下一轮 C/D 候选仍先跑 DIOR-R seed 42 筛选。只有单模块和组合达到预期趋势后，才补齐三个 seed、第二数据集及正式四组消融配置。
+
+### SGC 与 SGC+FDF
+
+SGC 是第三轮 C 候选，来源于 Strip R-CNN 的 large strip convolution 思想。当前只迁移条带几何校准，不整体替换 LSKNet-T backbone，也不引入两阶段 ROI head。
+
+实现落点：
+
+```text
+LSKNet-T C3/C4/C5 output
+-> 1x1 channel adapter
+-> StripGuidedCalibration on P3/P4/P5
+-> original YOLO11 Neck or FDF-enhanced top-down neck
+-> original YOLO11 OBB Head
+```
+
+初始化报告：
+
+- `lsknet_t_sgc_init_report.md`：`5.835M / 19.2 GFLOPs`，LSK backbone `478/478`，YOLO neck/head `304/355`。
+- `lsknet_t_sgc_fdf_init_report.md`：`5.864M / 19.2 GFLOPs`，LSK backbone `478/478`，YOLO neck/head `304/355`。
+
+当前应运行 seed 42 筛选：
+
+```bash
+cd /home/ws/ultralytics && source .venv/bin/activate && \
+python scripts/train_obb.py --config experiments/chapter4/lsknet_t_sgc_dior_official_homews.yaml && \
+python scripts/train_obb.py --config experiments/chapter4/lsknet_t_sgc_fdf_dior_official_homews.yaml
+```
+
+训练后持久化评估：
+
+```bash
+python scripts/evaluate_experiment_suite.py --suite experiments/chapter4/eval_sgc_screen_homews.yaml
+```
 
 ## 设计与报告边界
 

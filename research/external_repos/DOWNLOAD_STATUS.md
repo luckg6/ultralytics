@@ -1,6 +1,6 @@
 # 外部源码与权重材料状态
 
-更新日期：2026-08-12
+更新日期：2026-08-13
 
 本文件记录论文实验候选方法的外部源码和预训练权重准备状态。`research/external_repos/` 默认不随 Git 提交完整源码；本文件保留材料来源、当前位置和后续处理状态，便于本地与服务器复现。
 
@@ -13,6 +13,7 @@
 | FreqFusion | `research/external_repos/FreqFusion` | 用户已手动补齐；已检查 `README.md` 和 `FreqFusion.py` 存在 |
 | FDConv | `research/external_repos/FDConv` | 已克隆；CVPR 2025 frequency dynamic convolution/reference |
 | GauCho | `research/external_repos/GauCho` | 已克隆；OBB geometry representation/reference |
+| Strip R-CNN | `research/external_repos/Strip-R-CNN` | 用户已手动补齐，已检查 `README.md`、`configs/strip_rcnn/strip_rcnn_s_fpn_1x_dior_le90.py`、`mmrotate/models/backbones/stripnet.py`、`mmrotate/models/roi_heads/bbox_heads/strip_head.py` 存在 |
 | YOLOv10 | `research/external_repos/yolov10` | 已克隆；效率/assignment 参考，不作为第四章主创新 |
 | LSKNet | `research/external_repos/LSKNet` | 用户已手动补齐，已检查 `README.md`、`mmrotate/models/backbones/lsknet.py`、`configs/lsknet/lsk_t_fpn_1x_dota_le90.py` 存在 |
 | LSKNet-T DOTA checkpoint | `weights/pretrained/lsknet/lsk_t_fpn_1x_dota_le90_20230206-3ccee254.pth` | 用户已手动补齐，已在 `yololuck` 环境读取成功；包含 478 个 `backbone.*` 权重 key |

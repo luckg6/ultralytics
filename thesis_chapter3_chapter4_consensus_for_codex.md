@@ -183,8 +183,8 @@ C、D 不应：
 正式实验目标接受两个数据集、四组消融、三随机种子，即 `2 × 4 × 3 = 24` 次完整训练，但采用分阶段流程：
 
 1. 已完成：DIOR-R LSKNet-T baseline 接入、初始化、单种子验证和三 seed baseline；
-2. 已完成但停止扩展：OAC、FDF、OAC+FDF 与 OAC+FDF-Blend。它们能提升部分指标，但组合没有稳定优于两个单模块，All mAP50 平均增益也不足；
-3. 当前筛选：`C-v2 = FDConv-Lite`、`D = FDF`，先运行 DIOR-R seed 42 的单 C 与 C+D；
+2. 已完成但停止扩展：OAC、FDF、OAC+FDF、OAC+FDF-Blend 与 FDConv-Lite。它们能提升部分指标，但组合没有稳定优于两个单模块，All mAP50 平均增益也不足；
+3. 当前筛选：`C-v3 = SGC / Strip-Guided Calibration`、`D = FDF`，先运行 DIOR-R seed 42 的单 C 与 C+D；
 4. 只有组合在主要指标上优于 baseline 和两个单模块，并争取 All mAP50 提升约 1 个百分点时，才补齐三 seed；
 5. 设计成立后，运行第二数据集以及两数据集正式四组消融；
 6. 完整报告 Params、GFLOPs、FPS、延迟、显存和 mAP。

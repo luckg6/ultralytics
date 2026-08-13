@@ -17,7 +17,7 @@ YOLO 的 neck 依赖上采样和 concat 融合。遥感小目标容易在上采�
 
 ## 适合作为哪个实验
 
-- 第四章 D 候选：`FDF`。OAC+FDF 三 seed 组合未达到最终要求；当前暂保留 FDF，与 FDConv-Lite 重新测试互补性。
+- 第四章 D 候选：`FDF`。OAC+FDF、Blend 和 FDConv-Lite+FDF 均未达到最终要求；当前暂保留 FDF，与 SGC 重新测试互补性。
 
 ## 风险
 

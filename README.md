@@ -18,7 +18,7 @@
 
 ## 硕士论文衔接
 
-当前小论文结果可作为硕士论文第三章主体内容。第四章方案入口为 [thesis_chapter3_chapter4_consensus_for_codex.md](thesis_chapter3_chapter4_consensus_for_codex.md)：第三章和第四章是并列互补路线，不写成严格递进关系。第四章以 `LSKNet-T Backbone + 必要通道适配层 + YOLO11 Neck + YOLO11 OBB Head` 为 baseline，不继承第三章 FSPB/LPCF；LSKNet-T 只是基础架构选择。OAC/FDF 第一轮组合已完成三 seed 筛选但未达到最终目标，当前正在验证 `FDConv-Lite + FDF` 新组合，尚未定稿为第四章最终 C/D。
+当前小论文结果可作为硕士论文第三章主体内容。第四章方案入口为 [thesis_chapter3_chapter4_consensus_for_codex.md](thesis_chapter3_chapter4_consensus_for_codex.md)：第三章和第四章是并列互补路线，不写成严格递进关系。第四章以 `LSKNet-T Backbone + 必要通道适配层 + YOLO11 Neck + YOLO11 OBB Head` 为 baseline，不继承第三章 FSPB/LPCF；LSKNet-T 只是基础架构选择。OAC/FDF、Blend 与 FDConv-Lite 均已完成筛选但未达到最终目标，当前正在验证 `SGC + FDF` 新组合，尚未定稿为第四章最终 C/D。
 
 ## 论文主实验
 

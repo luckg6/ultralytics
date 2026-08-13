@@ -2,17 +2,18 @@
 
 本目录放置第三方论文官方源码，供实现核验和必要模块迁移。完整第三方工程默认不提交，也不直接并入本仓库的 Ultralytics 包；实际实验只使用项目内重新实现并登记来源的模块。
 
-截至 2026-08-12，本地已确认存在：
+截至 2026-08-13，本地已确认存在：
 
 - `PKINet/`
 - `GRA/`
 - `FreqFusion/`，含 `README.md` 和 `FreqFusion.py`
 - `FDConv/`
 - `GauCho/`
+- `Strip-R-CNN/`
 - `yolov10/`
 - `LSKNet/`
 
-`CANConv/` 尚未准备成功，目前是低优先级备选，不阻塞当前 FDConv-Lite + FDF 筛选。
+`CANConv/` 尚未准备成功，目前是低优先级备选，不阻塞当前 SGC + FDF 筛选。
 
 材料状态、目标目录和缺失项统一维护在 [DOWNLOAD_STATUS.md](DOWNLOAD_STATUS.md)，不要在本文件重复维护另一份下载清单。
 

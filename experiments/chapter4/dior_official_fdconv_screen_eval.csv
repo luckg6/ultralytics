@@ -1,0 +1,5 @@
+dataset,seed,variant,all_map50,all_map50_95,small_map50,small_map50_95,weight
+DIOR-R,42,Baseline,73.6836,56.8687,27.6878,18.145,/home/ws/ultralytics/runs/obb/dior_official_lsknet_t_baseline/weights/best.pt
+DIOR-R,42,FDF,73.5981,56.9227,29.3139,19.4689,/home/ws/ultralytics/runs/obb/dior_official_lsknet_t_fdf/weights/best.pt
+DIOR-R,42,FDConv-Lite,73.4116,56.8045,28.9353,19.0513,/home/ws/ultralytics/runs/obb/dior_official_lsknet_t_fdconv/weights/best.pt
+DIOR-R,42,FDConv-Lite+FDF,73.2754,56.5279,28.7739,18.9169,/home/ws/ultralytics/runs/obb/dior_official_lsknet_t_fdconv_fdf/weights/best.pt

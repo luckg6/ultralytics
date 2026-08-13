@@ -20,8 +20,8 @@
 - 第三章和第四章是并列互补路线，不要写成严格模型递进关系，也不要把第四章定位为解决第三章计算量上升的问题。
 - 第四章基础结构已确认：采用 `LSKNet-T Backbone + 必要通道适配层 + YOLO11 Neck + YOLO11 OBB Head`，不继承第三章 FSPB/LPCF。
 - 更换 LSKNet-T Backbone 本身不算创新点；第四章创新点应由 C、D 构成。
-- LSKNet-T baseline、结构适配和混合权重初始化已经完成。OAC、FDF、OAC+FDF 及 Blend 是已完成但未达到最终组合目标的筛选路线，不再作为当前定稿 C/D。
-- 当前筛选路线为 `C-v2 = FDConv-Lite`、`D = FDF`，先运行 DIOR-R seed 42 的单 C 与 C+D；结果成立后再补三 seed 和第二数据集。尚无训练结果时不得把它们写成最终创新点。
+- LSKNet-T baseline、结构适配和混合权重初始化已经完成。OAC、FDF、OAC+FDF、Blend 及 FDConv-Lite 是已完成但未达到最终组合目标的筛选路线，不再作为当前定稿 C/D。
+- 当前筛选路线为 `C-v3 = SGC / Strip-Guided Calibration`、`D = FDF`，先运行 DIOR-R seed 42 的单 C 与 C+D；结果成立后再补三 seed 和第二数据集。尚无训练结果时不得把它们写成最终创新点。
 - 第四章正式目标接受两数据集、四组消融、三随机种子。组合模型应在主要指标上优于 baseline 和两个单模块，并争取 All mAP50 相对 baseline 提升约 1 个百分点。
 - 第四章首先与自己的 LSKNet-T baseline 做受控消融；跨章节结果只用于说明路线特点和复杂度-精度权衡，不用于不公平的绝对排名。
 
