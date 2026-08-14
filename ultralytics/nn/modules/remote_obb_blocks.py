@@ -521,6 +521,53 @@ class FreqDetailFusion(nn.Module):
         return torch.cat((deep, lateral), dim=1)
 
 
+class FreqDetailResidual(nn.Module):
+    """Identity-start frequency-detail residual for gentle Chapter 4 D screening.
+
+    Unlike ``FreqDetailFusion``, this module does not replace any top-down neck
+    fusion. It only adds a small high-frequency residual on an existing feature
+    map, making it safer to combine with adapter-side geometry calibration.
+    """
+
+    def __init__(self, c1: int, expansion: float = 0.25, max_mid: int = 128, k: int = 5):
+        """Initialize a compact high-pass residual branch for one feature scale."""
+        super().__init__()
+        c_mid = max(min(int(c1 * expansion), max_mid), 32)
+        c_gate = max(c_mid // 4, 16)
+        pad = k // 2
+        self.lowpass = nn.AvgPool2d(k, stride=1, padding=pad)
+        self.reduce = ConvBNAct(c1, c_mid, 1, p=0)
+        self.local = nn.Sequential(
+            nn.Conv2d(c_mid, c_mid, 3, padding=1, groups=c_mid, bias=False),
+            nn.BatchNorm2d(c_mid),
+            nn.SiLU(inplace=True),
+        )
+        self.context = nn.Sequential(
+            nn.Conv2d(c_mid, c_mid, 5, padding=2, groups=c_mid, bias=False),
+            nn.BatchNorm2d(c_mid),
+            nn.SiLU(inplace=True),
+        )
+        self.channel_gate = nn.Sequential(
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(c_mid, c_gate, 1, bias=True),
+            nn.SiLU(inplace=True),
+            nn.Conv2d(c_gate, c_mid, 1, bias=True),
+            nn.Sigmoid(),
+        )
+        self.spatial_gate = nn.Sequential(nn.Conv2d(2, 1, 7, padding=3, bias=True), nn.Sigmoid())
+        self.restore = ConvBNAct(c_mid, c1, 1, p=0)
+        self.gamma = nn.Parameter(torch.zeros(1))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """Apply a zero-start residual to local high-frequency detail."""
+        detail = x - self.lowpass(x)
+        y = self.reduce(detail)
+        y = self.local(y) + self.context(y)
+        pooled = torch.cat((y.mean(1, keepdim=True), y.amax(1, keepdim=True)), dim=1)
+        y = y * self.channel_gate(y) * self.spatial_gate(pooled)
+        return x + torch.tanh(self.gamma) * self.restore(y)
+
+
 class FDConvLiteAdapter(nn.Module):
     """FDConv-inspired lightweight frequency-dynamic adapter for Chapter 4.
 

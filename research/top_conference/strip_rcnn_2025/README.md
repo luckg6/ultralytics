@@ -31,9 +31,9 @@ LSKNet-T C3/C4/C5 output
 
 - 不整体替换 LSKNet-T backbone，不使用 StripNet backbone checkpoint，避免把 baseline 变成另一个 backbone；
 - 不复制第三章 FSPB 的 P2 分支，也不复制 LPCF 的 poly-kernel context fusion；
-- 不再堆频域模块，保留 FDF 作为 D 时，C 侧重横/竖条带几何响应；
+- 不整体堆叠频域模块；若后续仍借鉴 FDF，需要改成更温和的残差/单尺度方式，避免与 SGC 负交互；
 - 使用标准 PyTorch depthwise strip convolution，例如 `1xk`、`kx1`、`1xk + kx1` 或小残差门控；
-- 首轮只做 seed 42 的 `SGC` 与 `SGC+FDF`，若组合不能优于 baseline 和单模块，就停止扩展。
+- 首轮 seed 42 已完成：`SGC` 单模块成立，直接 `SGC+FDF` 低于两个单模块，因此停止扩展该直接组合。
 
 ## 风险
 

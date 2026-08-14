@@ -6,7 +6,7 @@
 
 - 第三章已经定稿为 FSPC-OBB：FSPB(A) + LPCF(B)。C-GRA、C-Chol、C-SET-HBS 等均为历史探索，不进入第三章主方法。
 - 第四章以 LSKNet-T 混合结构为 baseline，LSKNet-T 本身不算创新。OAC/FDF 第一轮组合、Blend 与 FDConv-Lite 均已完成筛选但未达到最终组合目标。
-- 第四章下一轮优先筛选 `SGC + FDF`：SGC 为 Strip R-CNN 启发的条带几何校准候选；在结果产生并通过多 seed、第二数据集验证前，不把它写成最终 C/D。
+- 第四章最新筛选显示：SGC 为 Strip R-CNN 启发的条带几何校准候选，单模块在 DIOR-R seed 42 上有效；直接 `SGC+FDF` 组合存在负交互，不继续扩展。当前新增 `FDR-Lite` 作为更温和的频率细节残差 D 候选，并配置 `SGC+FDR-Lite` 组合；在通过 seed 42、多 seed 和第二数据集验证前，不把它写成最终 C/D。
 
 ## 参考索引
 

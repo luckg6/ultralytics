@@ -198,7 +198,7 @@ LSKNet-T C3/C4/C5 output
 - 在 P3/P4/P5 adapter 后加入轻量残差 `StripGuidedCalibration`；
 - 每个尺度使用 `1xk` 和 `kx1` depthwise strip branches，并用轻量 gate 融合；
 - 使用零初始化或小幅残差缩放，避免破坏 LSKNet-T 的 DOTA 预训练特征；
-- 第一轮只配置 `SGC` 和 `SGC+FDF` 的 DIOR-R official seed 42；若组合不能优于 baseline、FDF 和 SGC 单模块，就停止扩展。
+- 第一轮 `SGC` 和直接 `SGC+FDF` 的 DIOR-R official seed 42 已完成：SGC 单模块成立，直接组合低于 SGC 与 FDF 单模块，因此不继续扩展该直接组合。
 
 当前实现：
 
@@ -242,8 +242,9 @@ https://github.com/duanyll/CANConv
 
 第二优先级：
   OAC+FDF-Blend 和 FDConv-Lite+FDF 均已验证未达到严格目标
-  当前改为 C-v3 = SGC / Strip-Guided Calibration
-  先跑 seed42 的 SGC 与 SGC+FDF；若组合不能优于 baseline、FDF 和 SGC 单模块，则继续换 C/D 方向
+  C-v3 = SGC / Strip-Guided Calibration 的单模块 seed42 结果成立
+  直接 SGC+FDF 存在负交互，不继续扩三 seed
+  当前新增 D-v3 = FDR-Lite / Frequency-Detail Residual Lite，不替换 top-down neck，仅做零初始化频率细节残差；先跑 FDR-Lite 与 SGC+FDR-Lite 的 DIOR-R seed42
 
 第三优先级：
   角度连续表示 / Point-Axis / CANConv 作为论文讨论或后续备选，不先实现

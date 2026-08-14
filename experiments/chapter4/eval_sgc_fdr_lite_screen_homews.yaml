@@ -1,0 +1,29 @@
+title: Chapter 4 DIOR-R SGC + FDR-Lite Screening Evaluation
+
+defaults:
+  data: ultralytics/cfg/datasets/DIOR-official-homews.yaml
+  split: test
+  imgsz: 640
+  device: 1
+  workers: 8
+  project: runs/obb/chapter4_sgc_fdr_lite_screen_eval
+  out: experiments/chapter4/dior_official_sgc_fdr_lite_screen_eval
+
+experiments:
+  - dataset: DIOR-R
+    variant: Baseline
+    config: experiments/chapter4/lsknet_t_baseline_dior_official_homews.yaml
+    weights:
+      - weights/checkpoints/chapter4/dior_official/seed42/baseline/best.pt
+
+  - dataset: DIOR-R
+    variant: SGC
+    config: experiments/chapter4/lsknet_t_sgc_dior_official_homews.yaml
+
+  - dataset: DIOR-R
+    variant: FDR-Lite
+    config: experiments/chapter4/lsknet_t_fdr_lite_dior_official_homews.yaml
+
+  - dataset: DIOR-R
+    variant: SGC+FDR-Lite
+    config: experiments/chapter4/lsknet_t_sgc_fdr_lite_dior_official_homews.yaml

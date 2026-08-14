@@ -13,7 +13,7 @@
 - `yolov10/`
 - `LSKNet/`
 
-`CANConv/` 尚未准备成功，目前是低优先级备选，不阻塞当前 SGC + FDF 筛选。
+`CANConv/` 尚未准备成功，目前是低优先级备选；直接 `SGC+FDF` 筛选已经完成且未通过，后续如换新 D 再单独评估是否需要补齐。
 
 材料状态、目标目录和缺失项统一维护在 [DOWNLOAD_STATUS.md](DOWNLOAD_STATUS.md)，不要在本文件重复维护另一份下载清单。
 

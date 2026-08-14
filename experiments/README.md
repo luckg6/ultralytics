@@ -54,7 +54,7 @@ LSKNet-T Backbone
 + original YOLO11 OBB Head
 ```
 
-该 baseline 不继承第三章 FSPB/LPCF。LSKNet-T 只是基础架构选择，不作为创新。OAC/FDF、Blend 和 FDConv-Lite 均已完成筛选，但没有满足“组合稳定优于 baseline 与任一单模块”的最终要求；当前验证的新路线是 `SGC + FDF`，结果尚未产生。
+该 baseline 不继承第三章 FSPB/LPCF。LSKNet-T 只是基础架构选择，不作为创新。OAC/FDF、Blend、FDConv-Lite 和直接 `SGC+FDF` 均已完成筛选，但没有满足“组合稳定优于 baseline 与任一单模块”的最终要求；`SGC / Strip-Guided Calibration` 单模块在 DIOR-R seed 42 上四项指标均优于 baseline 和单 FDF，可作为当前 C 候选。当前新增 `FDR-Lite` 单 D 与 `SGC+FDR-Lite` 组合，等待 seed 42 筛选结果。
 
 当前 DIOR-R official 单种子结果：
 

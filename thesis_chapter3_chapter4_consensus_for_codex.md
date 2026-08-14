@@ -184,9 +184,11 @@ C、D 不应：
 
 1. 已完成：DIOR-R LSKNet-T baseline 接入、初始化、单种子验证和三 seed baseline；
 2. 已完成但停止扩展：OAC、FDF、OAC+FDF、OAC+FDF-Blend 与 FDConv-Lite。它们能提升部分指标，但组合没有稳定优于两个单模块，All mAP50 平均增益也不足；
-3. 当前筛选：`C-v3 = SGC / Strip-Guided Calibration`、`D = FDF`，先运行 DIOR-R seed 42 的单 C 与 C+D；
-4. 只有组合在主要指标上优于 baseline 和两个单模块，并争取 All mAP50 提升约 1 个百分点时，才补齐三 seed；
-5. 设计成立后，运行第二数据集以及两数据集正式四组消融；
-6. 完整报告 Params、GFLOPs、FPS、延迟、显存和 mAP。
+3. 最新筛选结论：`C-v3 = SGC / Strip-Guided Calibration` 单模块在 DIOR-R seed 42 上成立，四项指标均优于 LSKNet-T baseline 和单 FDF；
+4. 直接 `SGC+FDF` 组合在四项指标上均低于 SGC 和 FDF 单模块，不继续扩展该组合三 seed；
+5. 已新增更温和的 `D = FDR-Lite / Frequency-Detail Residual Lite` 以及 `SGC+FDR-Lite` 组合配置；该 D 不替换原始 neck 融合，只在 adapter 特征上加入零初始化频率细节残差；
+6. 只有组合在主要指标上优于 baseline 和两个单模块，并争取 All mAP50 提升约 1 个百分点时，才补齐三 seed；
+7. 设计成立后，运行第二数据集以及两数据集正式四组消融；
+8. 完整报告 Params、GFLOPs、FPS、延迟、显存和 mAP。
 
 第四章硬指标以 mAP 为主，尤其是 C、D 相对于 LSKNet-T baseline 的提升。复杂度指标用于分析部署代价和适用场景，不作为必须下降的约束。

@@ -72,6 +72,18 @@ YOLO_TO_LSK_FDCONV_LAYERS = {
     23: 24,  # OBB head
 }
 
+YOLO_TO_LSK_SGC_FDR_LAYERS = {
+    9: 11,  # SPPF
+    10: 12,  # C2PSA
+    13: 17,  # top-down P5->P4 C3k2 after SGC + FDR-Lite
+    16: 20,  # top-down P4->P3 C3k2 after SGC + FDR-Lite
+    17: 21,  # PAN P3->P4 downsample
+    19: 23,  # PAN P4 C3k2
+    20: 24,  # PAN P4->P5 downsample
+    22: 26,  # PAN P5 C3k2
+    23: 27,  # OBB head
+}
+
 YOLO_TO_LSK_OAC_FDF_LAYERS = {
     9: 9,  # SPPF
     10: 10,  # C2PSA
@@ -159,12 +171,16 @@ def choose_yolo_mapping(model_path: Path) -> dict[int, int]:
     """Choose the compatible YOLO11 layer-index mapping for a Chapter 4 model."""
     if "oac-fdf-blend" in model_path.stem or "oac_fdf_blend" in model_path.stem:
         return YOLO_TO_LSK_OAC_FDF_BLEND_LAYERS
+    if "sgc-fdr" in model_path.stem or "sgc_fdr" in model_path.stem:
+        return YOLO_TO_LSK_SGC_FDR_LAYERS
     if "sgc-fdf" in model_path.stem or "sgc_fdf" in model_path.stem:
         return YOLO_TO_LSK_FDCONV_FDF_LAYERS
     if "fdconv-fdf" in model_path.stem or "fdconv_fdf" in model_path.stem:
         return YOLO_TO_LSK_FDCONV_FDF_LAYERS
     if "oac-fdf" in model_path.stem or "oac_fdf" in model_path.stem:
         return YOLO_TO_LSK_OAC_FDF_LAYERS
+    if "fdr" in model_path.stem:
+        return YOLO_TO_LSK_FDCONV_LAYERS
     if "sgc" in model_path.stem:
         return YOLO_TO_LSK_FDCONV_LAYERS
     if "fdconv" in model_path.stem:
@@ -181,6 +197,8 @@ def default_variant_paths(model_path: Path) -> tuple[str, str]:
     stem = model_path.stem
     if "oac-fdf-blend" in stem or "oac_fdf_blend" in stem:
         variant = "oac_fdf_blend"
+    elif "sgc-fdr" in stem or "sgc_fdr" in stem:
+        variant = "sgc_fdr_lite"
     elif "sgc-fdf" in stem or "sgc_fdf" in stem:
         variant = "sgc_fdf"
     elif "fdconv-fdf" in stem or "fdconv_fdf" in stem:
@@ -189,6 +207,8 @@ def default_variant_paths(model_path: Path) -> tuple[str, str]:
         variant = "oac_fdf"
     elif "sgc" in stem:
         variant = "sgc"
+    elif "fdr" in stem:
+        variant = "fdr_lite"
     elif "fdconv" in stem:
         variant = "fdconv"
     elif "fdf" in stem:

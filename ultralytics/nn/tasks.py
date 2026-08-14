@@ -56,6 +56,7 @@ from ultralytics.nn.modules import (
     DWConvTranspose2d,
     Focus,
     FDConvLiteAdapter,
+    FreqDetailResidual,
     FreqDetailFusion,
     GhostBottleneck,
     GhostConv,
@@ -1695,7 +1696,7 @@ def parse_model(d, ch, verbose=True):
         elif m is LSKBlock:
             c2 = ch[f]
             args = [c2, *args]
-        elif m in frozenset({OrientationAwareCalibration, FDConvLiteAdapter, StripGuidedCalibration}):
+        elif m in frozenset({OrientationAwareCalibration, FDConvLiteAdapter, FreqDetailResidual, StripGuidedCalibration}):
             c2 = ch[f]
             args = [c2, *args]
         elif m is LSKNetT:

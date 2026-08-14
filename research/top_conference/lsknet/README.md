@@ -121,4 +121,4 @@ python scripts/train_obb.py --config experiments/chapter4/lsknet_t_baseline_dior
 - C、D 不应直接复制第三章 FSPB、LPCF 或完全相同的高分辨率预测分支。
 - Params、GFLOPs、FPS/latency 和显存占用必须如实记录，但不要求一定低于第三章。
 
-OAC、FDF、OAC+FDF、Blend 与 FDConv-Lite 已完成筛选，但组合没有稳定优于单模块，因此不作为定稿 C/D。当前待验证路线为 `SGC + FDF`，详见 `experiments/chapter4/README.md`；在训练结果产生前，它仍是候选而非论文结论。
+OAC、FDF、OAC+FDF、Blend、FDConv-Lite 与直接 `SGC+FDF` 已完成筛选，但组合没有稳定优于单模块，因此不作为定稿 C/D。SGC 单模块在 DIOR-R seed 42 上四项指标均超过 LSKNet-T baseline 和单 FDF，暂作为有效 C 候选；下一步需围绕 SGC 重新设计 D 或更温和的组合方式，详见 `experiments/chapter4/README.md`。

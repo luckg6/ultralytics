@@ -1,10 +1,22 @@
 # 第四章 DIOR-R `/home/ws` 命令
 
-更新日期：2026-08-12
+更新日期：2026-08-14
 
-固定环境：`device=1`、`batch=16`、`cache=ram`、`epochs=100`。当前待运行的是 SGC 路线的 DIOR-R official seed 42 筛选。
+固定环境：`device=1`、`batch=16`、`cache=ram`、`epochs=100`。SGC 路线的 DIOR-R official seed 42 筛选已经完成：单 SGC 成立，直接 SGC+FDF 组合不成立。当前待运行的是更温和的 `FDR-Lite` 单 D 与 `SGC+FDR-Lite` 组合筛选。
 
 ## 当前应运行
+
+```bash
+cd /home/ws/ultralytics && source .venv/bin/activate && python scripts/train_obb.py --config experiments/chapter4/lsknet_t_fdr_lite_dior_official_homews.yaml && python scripts/train_obb.py --config experiments/chapter4/lsknet_t_sgc_fdr_lite_dior_official_homews.yaml
+```
+
+训练后持久化评估：
+
+```bash
+cd /home/ws/ultralytics && source .venv/bin/activate && python scripts/evaluate_experiment_suite.py --suite experiments/chapter4/eval_sgc_fdr_lite_screen_homews.yaml
+```
+
+## SGC 筛选记录
 
 ```bash
 cd /home/ws/ultralytics && source .venv/bin/activate && \
@@ -25,6 +37,8 @@ python scripts/evaluate_experiment_suite.py --suite experiments/chapter4/eval_sg
 - `experiments/chapter4/dior_official_sgc_screen_eval.md`
 
 若小目标评估显存不足，追加 `--small-batch 1`。
+
+SGC seed 42 结果：单 SGC 四项指标均超过 baseline 和单 FDF；直接 SGC+FDF 四项均低于 SGC 和 FDF，因此不继续运行该组合三 seed。
 
 ## FDConv-Lite 筛选记录
 
@@ -59,6 +73,8 @@ FDConv-Lite seed 42 结果：组合模型在四项指标上均低于单 FDF，�
 - Baseline、FDF、OAC、OAC+FDF；
 - OAC+FDF-Blend 稳健组合。
 - FDConv-Lite、FDConv-Lite+FDF seed 42 筛选。
+- SGC、SGC+FDF seed 42 筛选。
+- FDR-Lite、SGC+FDR-Lite seed 42 筛选配置已生成，结果待训练后补充。
 
 它们的配置继续保留用于追溯，但不是当前待运行任务。结果入口：
 

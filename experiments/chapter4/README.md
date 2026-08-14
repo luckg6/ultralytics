@@ -125,7 +125,18 @@ LSKNet-T C3/C4/C5 output
 - `lsknet_t_sgc_init_report.md`：`5.835M / 19.2 GFLOPs`，LSK backbone `478/478`，YOLO neck/head `304/355`。
 - `lsknet_t_sgc_fdf_init_report.md`：`5.864M / 19.2 GFLOPs`，LSK backbone `478/478`，YOLO neck/head `304/355`。
 
-当前应运行 seed 42 筛选：
+seed 42 筛选结果：
+
+| Variant | All mAP50 | All mAP50:95 | Small mAP50 | Small mAP50:95 |
+|---|---:|---:|---:|---:|
+| Baseline | 73.68 | 56.87 | 27.69 | 18.14 |
+| FDF | 73.60 | 56.92 | 29.31 | 19.47 |
+| SGC | **73.92** | **57.35** | **29.62** | **19.79** |
+| SGC+FDF | 73.38 | 56.68 | 28.81 | 18.91 |
+
+结论：SGC 是目前最强的单 C 候选，四项指标均超过 baseline 和单 FDF；但直接 `SGC+FDF` 组合四项均低于两个单模块，说明当前条带几何校准和 FDF top-down 频率门控存在负交互。保留 SGC，暂不扩展这版直接组合到三 seed。
+
+复核训练命令：
 
 ```bash
 cd /home/ws/ultralytics && source .venv/bin/activate && \
@@ -137,6 +148,31 @@ python scripts/train_obb.py --config experiments/chapter4/lsknet_t_sgc_fdf_dior_
 
 ```bash
 python scripts/evaluate_experiment_suite.py --suite experiments/chapter4/eval_sgc_screen_homews.yaml
+```
+
+下一步优先围绕 SGC 设计新的 D 或更温和的 SGC+D 组合方式，而不是继续运行当前 `SGC+FDF` 三 seed。
+
+### FDR-Lite 与 SGC+FDR-Lite
+
+FDR-Lite 是新的 D 候选，用于替代直接插入 top-down neck 的 FDF。它不改变原始 YOLO11 neck 主路径，只在 P3/P4/P5 adapter 特征上加入零初始化的频率细节残差。组合模型保留 SGC 的条带几何校准，再追加 FDR-Lite 的弱残差细节补偿，目标是避免 `SGC+FDF` 的负交互。
+
+模型规模：
+
+- `lsknet_t_fdr_lite_init_report.md`：`5.824M / 19.1 GFLOPs`，LSK backbone `478/478`，YOLO neck/head `304/355`。
+- `lsknet_t_sgc_fdr_lite_init_report.md`：`5.895M / 19.4 GFLOPs`，LSK backbone `478/478`，YOLO neck/head `304/355`。
+
+当前应优先运行 seed 42 筛选：
+
+```bash
+cd /home/ws/ultralytics && source .venv/bin/activate && \
+python scripts/train_obb.py --config experiments/chapter4/lsknet_t_fdr_lite_dior_official_homews.yaml && \
+python scripts/train_obb.py --config experiments/chapter4/lsknet_t_sgc_fdr_lite_dior_official_homews.yaml
+```
+
+训练后持久化评估：
+
+```bash
+python scripts/evaluate_experiment_suite.py --suite experiments/chapter4/eval_sgc_fdr_lite_screen_homews.yaml
 ```
 
 ## 设计与报告边界
