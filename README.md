@@ -18,7 +18,7 @@
 
 ## 硕士论文衔接
 
-当前小论文结果可作为硕士论文第三章主体内容。第四章方案入口为 [thesis_chapter3_chapter4_consensus_for_codex.md](thesis_chapter3_chapter4_consensus_for_codex.md)：第三章和第四章是并列互补路线，不写成严格递进关系。第四章以 `LSKNet-T Backbone + 必要通道适配层 + YOLO11 Neck + YOLO11 OBB Head` 为 baseline，不继承第三章 FSPB/LPCF；LSKNet-T 只是基础架构选择。OAC/FDF、Blend、FDConv-Lite 与直接 `SGC+FDF` 均已完成筛选但未达到最终组合目标；当前保留 `SGC / Strip-Guided Calibration` 作为有效单 C 候选，并新增更温和的 `FDR-Lite` 单 D 与 `SGC+FDR-Lite` 组合用于下一轮 seed 42 筛选，尚未定稿为第四章最终 C/D。
+当前小论文结果可作为硕士论文第三章主体内容。第四章方案入口为 [thesis_chapter3_chapter4_consensus_for_codex.md](thesis_chapter3_chapter4_consensus_for_codex.md)：第三章和第四章是并列互补路线，不写成严格递进关系。第四章以 `LSKNet-T Backbone + 必要通道适配层 + YOLO11 Neck + YOLO11 OBB Head` 为 baseline，不继承第三章 FSPB/LPCF；LSKNet-T 只是基础架构选择。OAC/FDF、Blend、FDConv-Lite、直接 `SGC+FDF` 以及 `SGC+FDR-Lite` 均已完成筛选但未达到最终组合目标；当前 `SGC / Strip-Guided Calibration` 是有效单 C 候选，尚无正式 C/D 定稿。
 
 ## 论文主实验
 

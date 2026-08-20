@@ -161,15 +161,18 @@ FDR-Lite 是新的 D 候选，用于替代直接插入 top-down neck 的 FDF。�
 - `lsknet_t_fdr_lite_init_report.md`：`5.824M / 19.1 GFLOPs`，LSK backbone `478/478`，YOLO neck/head `304/355`。
 - `lsknet_t_sgc_fdr_lite_init_report.md`：`5.895M / 19.4 GFLOPs`，LSK backbone `478/478`，YOLO neck/head `304/355`。
 
-当前应优先运行 seed 42 筛选：
+seed 42 筛选结果：
 
-```bash
-cd /home/ws/ultralytics && source .venv/bin/activate && \
-python scripts/train_obb.py --config experiments/chapter4/lsknet_t_fdr_lite_dior_official_homews.yaml && \
-python scripts/train_obb.py --config experiments/chapter4/lsknet_t_sgc_fdr_lite_dior_official_homews.yaml
-```
+| Variant | All mAP50 | All mAP50:95 | Small mAP50 | Small mAP50:95 |
+|---|---:|---:|---:|---:|
+| Baseline | 73.68 | 56.87 | 27.69 | 18.14 |
+| SGC | 73.92 | **57.35** | **29.62** | **19.79** |
+| FDR-Lite | **73.93** | 56.83 | 28.77 | 18.91 |
+| SGC+FDR-Lite | 73.73 | 56.91 | 29.02 | 19.23 |
 
-训练后持久化评估：
+结论：FDR-Lite 单 D 仅在 All mAP50 上略高于 SGC，但 All mAP50:95 与小目标指标低于 SGC；`SGC+FDR-Lite` 组合也没有超过 SGC 单模块。因此该路线保留为筛选记录，不继续扩展三 seed。
+
+复核评估命令：
 
 ```bash
 python scripts/evaluate_experiment_suite.py --suite experiments/chapter4/eval_sgc_fdr_lite_screen_homews.yaml

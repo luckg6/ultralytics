@@ -244,7 +244,7 @@ https://github.com/duanyll/CANConv
   OAC+FDF-Blend 和 FDConv-Lite+FDF 均已验证未达到严格目标
   C-v3 = SGC / Strip-Guided Calibration 的单模块 seed42 结果成立
   直接 SGC+FDF 存在负交互，不继续扩三 seed
-  当前新增 D-v3 = FDR-Lite / Frequency-Detail Residual Lite，不替换 top-down neck，仅做零初始化频率细节残差；先跑 FDR-Lite 与 SGC+FDR-Lite 的 DIOR-R seed42
+  D-v3 = FDR-Lite / Frequency-Detail Residual Lite 已完成 seed42：单 D 仅 All mAP50 略高，SGC+FDR-Lite 未超过 SGC，因此不扩展三 seed
 
 第三优先级：
   角度连续表示 / Point-Axis / CANConv 作为论文讨论或后续备选，不先实现
